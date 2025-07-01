@@ -638,15 +638,49 @@
         registerSubmitBtn.addEventListener('click', handleRegister);
 
         async function handleLogin() {
-            // This function will be implemented once the login Netlify function is created.
-            showModal("Login functionality is not yet implemented.");
+            const username = loginUsernameInput.value.trim();
+            const password = loginPasswordInput.value;
+            if (!username || !password) return showModal("Please enter a username and password.");
+
+            try {
+                const response = await fetch('/.netlify/functions/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                });
+
+                const contentType = response.headers.get("content-type");
+                if (!response.ok) {
+                    let errorMessage = 'Login failed.';
+                     if (contentType && contentType.indexOf("application/json") !== -1) {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorMessage;
+                    } else {
+                        errorMessage = await response.text();
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const data = await response.json();
+                authModal.classList.add('hidden');
+                showModal(data.message);
+                updateUIForLoggedInState(data.user);
+
+            } catch (error) {
+                console.error("Login Error:", error);
+                showModal(`Login failed: ${error.message}`);
+            }
         }
         loginSubmitBtn.addEventListener('click', handleLogin);
 
 
         // --- User Profile & Friends ---
         // These functions will be re-implemented once the API endpoints are ready.
-        function setupUserProfile(uid) {}
+        function setupUserProfile(user) {
+            currentUser = user;
+            usernameDisplay.textContent = user.username;
+            friendCodeDisplay.textContent = user.friendCode;
+        }
         function addFriend() { showModal("This feature is coming soon!"); }
         function listenForFriends() {}
 

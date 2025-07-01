@@ -546,14 +546,13 @@
         backToChallengesBtn.addEventListener('click', () => showPage('page-challenges'));
 
         // --- Authentication ---
-        function updateUIForLoggedInState(user) {
-            currentUser = user;
+        function updateUIForLoggedInState(user, token) {
+            currentUser = { ...user, token };
             usernameDisplay.textContent = user.username;
             friendCodeDisplay.textContent = user.friendCode;
             loginBtn.textContent = 'Logout';
             loginBtnMobile.textContent = 'Logout';
-            // Placeholder for fetching user-specific data
-            // listenForChallenges();
+            fetchAndRenderChallenges();
             // listenForFriends();
             showPage('page-dashboard');
         }
@@ -664,7 +663,7 @@
                 const data = await response.json();
                 authModal.classList.add('hidden');
                 showModal(data.message);
-                updateUIForLoggedInState(data.user);
+                updateUIForLoggedInState(data.user, data.token);
 
             } catch (error) {
                 console.error("Login Error:", error);

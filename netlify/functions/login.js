@@ -5,7 +5,7 @@
 
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken'); // You will need to run: npm install jsonwebtoken
+const jwt = require('jsonwebtoken');
 
 // The connection string and JWT secret should be stored as environment variables in Netlify.
 const pool = new Pool({
@@ -15,7 +15,8 @@ const pool = new Pool({
   }
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-default-secret-key-for-local-testing';
+// IMPORTANT: Create a JWT_SECRET environment variable in your Netlify settings.
+const JWT_SECRET = process.env.JWT_SECRET || 'your-default-super-secret-key-for-local-testing';
 
 exports.handler = async (event, context) => {
     if (event.httpMethod !== 'POST') {

@@ -869,6 +869,12 @@
                     startBtn.className = 'flex-grow bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg';
                     startBtn.onclick = () => startChallenge(challengeId);
                     actions.appendChild(startBtn);
+
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.textContent = 'Cancel';
+                    cancelBtn.className = 'flex-grow bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg';
+                    cancelBtn.onclick = () => cancelChallenge(challengeId);
+                    actions.appendChild(cancelBtn);
                 }
                 if (!isParticipant) {
                     const joinBtn = document.createElement('button');
@@ -937,6 +943,30 @@
                 fetchAndRenderChallenges(); // Re-fetch to update UI
             } catch (error) {
                 console.error("Start Challenge Error:", error);
+                showModal(`Error: ${error.message}`);
+            }
+        }
+
+        async function cancelChallenge(challengeId) {
+            if (!currentUser) return showModal('You must be logged in.');
+            
+            try {
+                const response = await fetch('/.netlify/functions/cancel-challenge', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
+                    body: JSON.stringify({ challengeId }),
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to cancel challenge.');
+
+                showModal(data.message);
+                fetchAndRenderChallenges(); // Re-fetch to update UI
+            } catch (error) {
+                console.error("Cancel Challenge Error:", error);
                 showModal(`Error: ${error.message}`);
             }
         }

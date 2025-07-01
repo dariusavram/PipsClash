@@ -1,0 +1,5 @@
+# This file should be in the root of your project.
+
+[functions]
+  # This tells Netlify that your serverless functions are in the "netlify/functions" directory.
+  directory = "netlify/functions/"

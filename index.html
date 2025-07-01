@@ -611,14 +611,21 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password }),
                 });
-                const data = await response.json();
-
+                
+                const contentType = response.headers.get("content-type");
                 if (!response.ok) {
-                    throw new Error(data.message || 'Registration failed.');
+                    let errorMessage = 'Registration failed.';
+                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorMessage;
+                    } else {
+                        errorMessage = await response.text();
+                    }
+                    throw new Error(errorMessage);
                 }
                 
-                showModal(data.message);
-                // Switch to login tab after successful registration
+                const data = await response.json();
+                showModal(data.message || "Registration successful!");
                 loginTabBtn.click();
                 loginUsernameInput.value = username;
                 loginPasswordInput.value = '';

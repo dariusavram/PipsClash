@@ -553,7 +553,7 @@
             loginBtn.textContent = 'Logout';
             loginBtnMobile.textContent = 'Logout';
             fetchAndRenderChallenges();
-            // listenForFriends();
+            listenForFriends();
             showPage('page-dashboard');
         }
 
@@ -674,20 +674,66 @@
 
 
         // --- User Profile & Friends ---
-        // These functions will be re-implemented once the API endpoints are ready.
         function setupUserProfile(user) {
             currentUser = user;
             usernameDisplay.textContent = user.username;
             friendCodeDisplay.textContent = user.friendCode;
         }
-        function addFriend() { showModal("This feature is coming soon!"); }
-        function listenForFriends() {}
+        async function addFriend() {
+            if (!currentUser) return showModal('You must be logged in.');
+            const friendCode = friendCodeInput.value.trim();
+            if (!friendCode) return showModal('Please enter a friend code.');
+            
+            try {
+                const response = await fetch('/.netlify/functions/add-friend', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
+                    body: JSON.stringify({ friendCode }),
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to add friend.');
+                
+                showModal(data.message);
+                friendCodeInput.value = '';
+                listenForFriends(); // Refresh friend list
 
-        // --- Challenges ---
-        function generateChallengeCode() {
-            return Math.random().toString(36).substring(2, 12).toUpperCase();
+            } catch (error) {
+                console.error("Add Friend Error:", error);
+                showModal(`Error: ${error.message}`);
+            }
+        }
+        addFriendBtn.addEventListener('click', addFriend);
+
+        async function listenForFriends() {
+            if (!currentUser) return;
+            try {
+                const response = await fetch('/.netlify/functions/get-friends', {
+                    headers: { 'Authorization': `Bearer ${currentUser.token}` }
+                });
+                if (!response.ok) throw new Error('Could not fetch friends.');
+
+                const friends = await response.json();
+                friendsList.innerHTML = '';
+                if (friends && friends.length > 0) {
+                    friends.forEach(friend => {
+                        const li = document.createElement('li');
+                        li.className = "bg-gray-700 p-3 rounded-lg flex justify-between items-center";
+                        li.innerHTML = `<span>${friend.username}</span> <span class="text-xs text-gray-400">${friend.friend_code}</span>`;
+                        friendsList.appendChild(li);
+                    });
+                } else {
+                    friendsList.innerHTML = '<li class="text-gray-400">No friends yet. Add one!</li>';
+                }
+            } catch (error) {
+                 console.error("Listen for Friends Error:", error);
+                 friendsList.innerHTML = `<li class="text-red-400">Error loading friends.</li>`;
+            }
         }
 
+        // --- Challenges ---
         async function createChallenge() {
             if (!currentUser) return showModal('You must be logged in to create a challenge.');
 

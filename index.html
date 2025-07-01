@@ -689,12 +689,157 @@
             return Math.random().toString(36).substring(2, 12).toUpperCase();
         }
 
-        function createChallenge() { showModal("This feature is coming soon!"); }
+        async function createChallenge() {
+            if (!currentUser) return showModal('You must be logged in to create a challenge.');
+
+            const payload = {
+                startAmount: parseInt(document.getElementById('challenge-sum').value),
+                timeLimit: parseInt(document.getElementById('time-limit').value),
+                maxLossPercent: parseInt(document.getElementById('max-loss').value),
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/create-challenge', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to create challenge.');
+
+                showModal(data.message);
+                fetchAndRenderChallenges();
+                showPage('page-dashboard');
+
+            } catch (error) {
+                console.error("Create Challenge Error:", error);
+                showModal(`Error: ${error.message}`);
+            }
+        }
         createChallengeBtn.addEventListener('click', createChallenge);
 
-        function listenForChallenges() {}
-        function renderChallenge(challenge, challengeId) {}
-        function joinChallenge(challengeId) {}
+        async function fetchAndRenderChallenges() {
+            if(!currentUser) return;
+            
+            try {
+                const response = await fetch('/.netlify/functions/get-challenges');
+                if (!response.ok) throw new Error('Could not fetch challenges.');
+                const challenges = await response.json();
+
+                challengesList.innerHTML = '';
+                dashboardChallengesList.innerHTML = '';
+                let userChallenges = [];
+                let activeTradeableChallenges = [];
+
+                if(challenges.length === 0){
+                    challengesList.innerHTML = '<p class="text-gray-400">No public challenges. Create one!</p>';
+                } else {
+                    challenges.forEach(challenge => {
+                        const challengeEl = renderChallenge(challenge, challenge.id);
+                        challengesList.appendChild(challengeEl);
+                        
+                        if (challenge.participants.some(p => p.uid === currentUser.id)) {
+                            userChallenges.push(challenge);
+                            if (challenge.status === 'active') {
+                                activeTradeableChallenges.push(challenge);
+                            }
+                        }
+                    });
+                }
+                
+                dashboardJoinedCount.textContent = userChallenges.length;
+                if (userChallenges.length > 0) {
+                     userChallenges.forEach(c => {
+                        const el = renderChallenge(c, c.id);
+                        dashboardChallengesList.appendChild(el);
+                     });
+                } else {
+                    dashboardChallengesList.innerHTML = '<p class="text-gray-400">You have not joined any challenges yet.</p>';
+                }
+
+                if (activeTradeableChallenges.length > 0) {
+                    tradeChallengeSelect.innerHTML = '';
+                    activeTradeableChallenges.forEach(c => {
+                        const option = document.createElement('option');
+                        option.value = c.id;
+                        option.textContent = `Code: ${c.challenge_code} ($${c.start_amount.toLocaleString()})`;
+                        tradeChallengeSelect.appendChild(option);
+                    });
+                    tradeChallengeSelect.dispatchEvent(new Event('change'));
+                }
+
+            } catch(error) {
+                console.error("Fetch Challenges Error:", error);
+                showModal(error.message);
+            }
+        }
+
+        function renderChallenge(challenge, challengeId) {
+            const el = document.createElement('div');
+            el.className = 'bg-gray-700 p-4 rounded-lg';
+            
+            const isCreator = challenge.creator_id === currentUser.id;
+            const isParticipant = challenge.participants.some(p => p.uid === currentUser.id);
+            let statusColor = 'text-yellow-400';
+            if (challenge.status === 'active') statusColor = 'text-green-400';
+            if (challenge.status === 'finished') statusColor = 'text-gray-400';
+
+            const details = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p><strong>Amount:</strong> $${Number(challenge.start_amount).toLocaleString()}</p>
+                        <p><strong>Time Limit:</strong> ${challenge.time_limit_days} days</p>
+                        <p><strong>Participants:</strong> ${challenge.participants.length}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold ${statusColor}">${challenge.status.toUpperCase()}</p>
+                        <p class="text-xs text-gray-400 mt-1">Creator: ${challenge.creator_username || '...'} </p>
+                    </div>
+                </div>
+                <div class="mt-3 bg-gray-800 p-2 rounded-md text-center cursor-pointer" onclick="navigator.clipboard.writeText('${challenge.challenge_code}')">
+                    <span class="text-sm text-gray-400">Code: </span>
+                    <span class="font-mono tracking-widest">${challenge.challenge_code}</span>
+                </div>
+            `;
+            
+            const actions = document.createElement('div');
+            actions.className = 'mt-4 flex gap-2 flex-wrap';
+
+            // View Details Button
+            const viewBtn = document.createElement('button');
+            viewBtn.textContent = 'View Details';
+            viewBtn.className = 'flex-grow bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg';
+            viewBtn.onclick = () => showPage('page-challenge-detail', { challengeId: challengeId });
+            actions.appendChild(viewBtn);
+
+
+            if (challenge.status === 'pending') {
+                if (isCreator) {
+                    const startBtn = document.createElement('button');
+                    startBtn.textContent = 'Start';
+                    startBtn.className = 'flex-grow bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg';
+                    startBtn.onclick = () => startChallenge(challengeId, challenge.participants, challenge.startAmount);
+                    actions.appendChild(startBtn);
+                }
+                if (!isParticipant) {
+                    const joinBtn = document.createElement('button');
+                    joinBtn.textContent = 'Join';
+                    joinBtn.className = 'flex-grow bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg';
+                    joinBtn.onclick = () => joinChallenge(challengeId);
+                    actions.appendChild(joinBtn);
+                }
+            }
+
+            el.innerHTML = details;
+            el.appendChild(actions);
+            return el;
+        }
+        
+        function joinChallenge(challengeId) { showModal("This feature is coming soon!"); }
         function joinChallengeByCode() { showModal("This feature is coming soon!"); }
         joinByCodeBtn.addEventListener('click', joinChallengeByCode);
         function startChallenge(challengeId, participants, startAmount) {}

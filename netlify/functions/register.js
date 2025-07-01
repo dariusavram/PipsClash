@@ -15,7 +15,7 @@ const pool = new Pool({
   ssl: {
     rejectUnauthorized: false
   }
-});
+}); 
 
 // Helper to generate a random friend code
 const generateFriendCode = () => {

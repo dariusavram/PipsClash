@@ -1,0 +1,16 @@
+{
+  "name": "tradelink-app",
+  "version": "1.0.0",
+  "description": "Trading challenge platform with Netlify and Neon.",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3"
+  }
+}

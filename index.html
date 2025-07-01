@@ -821,14 +821,14 @@
                     const startBtn = document.createElement('button');
                     startBtn.textContent = 'Start';
                     startBtn.className = 'flex-grow bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg';
-                    startBtn.onclick = () => startChallenge(challengeId, challenge.participants, challenge.startAmount);
+                    startBtn.onclick = () => startChallenge(challengeId);
                     actions.appendChild(startBtn);
                 }
                 if (!isParticipant) {
                     const joinBtn = document.createElement('button');
                     joinBtn.textContent = 'Join';
                     joinBtn.className = 'flex-grow bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg';
-                    joinBtn.onclick = () => joinChallenge(challengeId);
+                    joinBtn.onclick = () => joinChallenge(challenge.challenge_code);
                     actions.appendChild(joinBtn);
                 }
             }
@@ -838,10 +838,62 @@
             return el;
         }
         
-        function joinChallenge(challengeId) { showModal("This feature is coming soon!"); }
-        function joinChallengeByCode() { showModal("This feature is coming soon!"); }
+        async function joinChallenge(challengeCode) {
+            if (!currentUser) return showModal('You must be logged in.');
+            
+            try {
+                const response = await fetch('/.netlify/functions/join-challenge', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
+                    body: JSON.stringify({ challengeCode }),
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to join challenge.');
+                
+                showModal(data.message);
+                fetchAndRenderChallenges(); // Re-fetch to update UI
+            } catch (error) {
+                console.error("Join Challenge Error:", error);
+                showModal(`Error: ${error.message}`);
+            }
+        }
+
+        async function joinChallengeByCode() {
+            if (!currentUser) return showModal('You must be logged in.');
+            const code = challengeCodeInput.value.trim().toUpperCase();
+            if (!code) return showModal('Please enter a challenge code.');
+            await joinChallenge(code);
+            challengeCodeInput.value = '';
+        }
         joinByCodeBtn.addEventListener('click', joinChallengeByCode);
-        function startChallenge(challengeId, participants, startAmount) {}
+
+        async function startChallenge(challengeId) {
+            if (!currentUser) return showModal('You must be logged in.');
+            
+            try {
+                const response = await fetch('/.netlify/functions/start-challenge', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
+                    body: JSON.stringify({ challengeId }),
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to start challenge.');
+
+                showModal(data.message);
+                fetchAndRenderChallenges(); // Re-fetch to update UI
+            } catch (error) {
+                console.error("Start Challenge Error:", error);
+                showModal(`Error: ${error.message}`);
+            }
+        }
 
         // --- Challenge Detail Page & Chart ---
         function loadChallengeDetail(challengeId) {}

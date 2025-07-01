@@ -29,10 +29,10 @@
             <div class="flex justify-between items-center">
                 <div class="text-2xl font-bold text-white">TradeLink</div>
                 <div class="hidden md:flex items-center space-x-2">
-                    <a href="#" id="nav-dashboard" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
-                    <a href="#" id="nav-challenges" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Challenges</a>
-                    <a href="#" id="nav-friends" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Friends</a>
-                    <a href="#" id="nav-trade" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Trade</a>
+                    <a href="#" id="nav-dashboard" data-page="dashboard" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
+                    <a href="#" id="nav-challenges" data-page="challenges" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Challenges</a>
+                    <a href="#" id="nav-friends" data-page="friends" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Friends</a>
+                    <a href="#" id="nav-trade" data-page="trade" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Trade</a>
                     <button id="login-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-2">
                         Login
                     </button>
@@ -47,10 +47,10 @@
             </div>
              <!-- Mobile Menu -->
             <div id="mobile-menu" class="md:hidden hidden mt-3 space-y-1">
-                <a href="#" id="nav-dashboard-mobile" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
-                <a href="#" id="nav-challenges-mobile" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Challenges</a>
-                <a href="#" id="nav-friends-mobile" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Friends</a>
-                <a href="#" id="nav-trade-mobile" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Trade</a>
+                <a href="#" id="nav-dashboard-mobile" data-page="dashboard" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
+                <a href="#" id="nav-challenges-mobile" data-page="challenges" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Challenges</a>
+                <a href="#" id="nav-friends-mobile" data-page="friends" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Friends</a>
+                <a href="#" id="nav-trade-mobile" data-page="trade" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Trade</a>
                 <button id="login-btn-mobile" class="w-full text-left bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg mt-2">
                     Login
                 </button>
@@ -511,12 +511,23 @@
             mobileMenu.classList.add('hidden');
         }
 
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
+        document.querySelector('header').addEventListener('click', (e) => {
+            const navLink = e.target.closest('.nav-link');
+            const loginButton = e.target.closest('#login-btn, #login-btn-mobile');
+
+            if (navLink) {
                 e.preventDefault();
-                const pageId = `page-${e.target.id.split('-')[1]}`;
-                showPage(pageId);
-            });
+                const pageId = `page-${navLink.dataset.page}`;
+                if (pageId && document.getElementById(pageId)) {
+                    showPage(pageId);
+                }
+                return;
+            }
+
+            if (loginButton) {
+                handleAuthAction();
+                return;
+            }
         });
         
         mobileMenuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
@@ -525,14 +536,7 @@
         // --- Authentication ---
         onAuthStateChanged(auth, async (user) => {
             const loginButtons = [loginBtn, loginBtnMobile];
-            if (user && !user.isAnonymous) {
-                 userId = user.uid;
-                await setupUserProfile(userId);
-                loginButtons.forEach(btn => btn.textContent = 'Logout');
-                listenForChallenges();
-                listenForFriends();
-                showPage('page-dashboard');
-            } else if (user && user.isAnonymous) {
+            if (user) {
                 userId = user.uid;
                 const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
                 const userDocSnap = await getDoc(userDocRef);
@@ -545,8 +549,7 @@
                 } else {
                     usernameModal.classList.remove('hidden');
                 }
-            }
-            else {
+            } else {
                 userId = null;
                 userProfile = null;
                 usernameDisplay.textContent = 'Not logged in';
@@ -570,7 +573,6 @@
                 });
             }
         }
-        [loginBtn, loginBtnMobile].forEach(btn => btn.addEventListener('click', handleAuthAction));
         
         async function handleUsernameSubmit() {
             const username = usernameInput.value.trim();

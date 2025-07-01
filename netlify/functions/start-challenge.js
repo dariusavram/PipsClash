@@ -32,10 +32,8 @@ exports.handler = async (event, context) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         const { userId } = decoded;
 
-        await client.query('BEGIN');
-
         // Check if the user is the creator of the challenge
-        const challengeQuery = 'SELECT creator_id, start_amount, participants FROM challenges WHERE id = $1';
+        const challengeQuery = 'SELECT creator_id FROM challenges WHERE id = $1';
         const challengeResult = await client.query(challengeQuery, [challengeId]);
 
         if (challengeResult.rows.length === 0) {
@@ -61,17 +59,11 @@ exports.handler = async (event, context) => {
             throw new Error('Challenge could not be started. It might already be active or finished.');
         }
 
-        // This part is now handled by the join function, but we keep it here as a reference for future logic
-        // For example, if you wanted to create portfolios for all participants at once.
-
-        await client.query('COMMIT');
-
         return {
             statusCode: 200,
             body: JSON.stringify({ message: 'Challenge started successfully!', challenge: updateResult.rows[0] }),
         };
     } catch (error) {
-        await client.query('ROLLBACK');
         console.error('Start Challenge Error:', error);
         if (error.name === 'JsonWebTokenError') {
              return { statusCode: 401, body: JSON.stringify({ message: 'Invalid token.' }) };

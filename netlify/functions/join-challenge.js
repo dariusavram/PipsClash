@@ -30,10 +30,10 @@ exports.handler = async (event, context) => {
         }
 
         const decoded = jwt.verify(token, JWT_SECRET);
-        const { userId, username } = decoded;
+        const { userId } = decoded;
 
         // Find the challenge by code
-        const challengeQuery = 'SELECT id, status, start_amount, participants FROM challenges WHERE challenge_code = $1';
+        const challengeQuery = 'SELECT id, status, start_amount FROM challenges WHERE challenge_code = $1';
         const challengeResult = await client.query(challengeQuery, [challengeCode]);
 
         if (challengeResult.rows.length === 0) {
@@ -46,21 +46,13 @@ exports.handler = async (event, context) => {
             return { statusCode: 400, body: JSON.stringify({ message: 'This challenge has already started or is finished.' }) };
         }
         
-        // Check if user is already a participant
-        if (challenge.participants.some(p => p.uid === userId)) {
+        // Check if user is already a participant in the participants table
+        const participantCheckQuery = 'SELECT user_id FROM participants WHERE challenge_id = $1 AND user_id = $2';
+        const participantResult = await client.query(participantCheckQuery, [challenge.id, userId]);
+
+        if (participantResult.rows.length > 0) {
             return { statusCode: 409, body: JSON.stringify({ message: "You've already joined this challenge." }) };
         }
-
-        // Add user to participants array in the challenges table
-        const newParticipant = { uid: userId, username: username };
-        const updatedParticipants = [...challenge.participants, newParticipant];
-        
-        const updateChallengeQuery = `
-            UPDATE challenges 
-            SET participants = $1 
-            WHERE id = $2
-        `;
-        await client.query(updateChallengeQuery, [JSON.stringify(updatedParticipants), challenge.id]);
         
         // Add user to the separate participants table for tracking balance
         const insertParticipantQuery = `

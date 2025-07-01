@@ -268,13 +268,33 @@
 
     </main>
     
-    <!-- Username Modal -->
-    <div id="username-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6">
-            <h2 class="text-2xl font-bold mb-4 text-white">Choose Your Username</h2>
-            <p class="text-gray-400 mb-4">This will be your name for this session.</p>
-            <input type="text" id="username-input" placeholder="Enter username" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <button id="username-submit-btn" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Confirm</button>
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-end p-2">
+                <button id="auth-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div class="p-6">
+                <!-- Tabs -->
+                <div class="flex border-b border-gray-700">
+                    <button id="login-tab-btn" class="flex-1 py-2 text-lg font-semibold border-b-2 border-indigo-500 text-white">Login</button>
+                    <button id="register-tab-btn" class="flex-1 py-2 text-lg font-semibold border-b-2 border-transparent text-gray-400">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="login-form" class="mt-6 space-y-4">
+                    <input type="text" id="login-username" placeholder="Username" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <input type="password" id="login-password" placeholder="Password" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button id="login-submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Login</button>
+                </div>
+
+                <!-- Register Form -->
+                <div id="register-form" class="mt-6 space-y-4 hidden">
+                    <input type="text" id="register-username" placeholder="Username" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <input type="password" id="register-password" placeholder="Password" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button id="register-submit-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Create Account</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -287,29 +307,12 @@
         </div>
     </div>
     
-    <!-- Firebase SDK -->
     <script type="module">
-        // These variables will be provided by the environment.
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // Import statements
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, collection, onSnapshot, query, where, getDocs, updateDoc, arrayUnion, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- IMPORTANT: PASTE YOUR FREE API KEY HERE ---
+        // --- IMPORTANT: PASTE YOUR FINNHUB API KEY HERE ---
         // Get a free key from https://finnhub.io/register
         const FINNHUB_API_KEY = 'd1hp2f1r01qsvr2bhqh0d1hp2f1r01qsvr2bhqhg'; 
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        let userId = null;
-        let userProfile = null;
+        let currentUser = null; // Will hold user info and JWT
         let tradingViewWidget = null;
         let leaderboardChart = null;
         let challengeDetailUnsubscribe = null;
@@ -352,10 +355,19 @@
         const challengeDetailInfo = document.getElementById('challenge-detail-info');
         const leaderboardFilter = document.getElementById('leaderboard-filter');
 
-        // Username Modal Elements
-        const usernameModal = document.getElementById('username-modal');
-        const usernameInput = document.getElementById('username-input');
-        const usernameSubmitBtn = document.getElementById('username-submit-btn');
+        // Auth Modal Elements
+        const authModal = document.getElementById('auth-modal');
+        const authModalCloseBtn = document.getElementById('auth-modal-close-btn');
+        const loginTabBtn = document.getElementById('login-tab-btn');
+        const registerTabBtn = document.getElementById('register-tab-btn');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const loginUsernameInput = document.getElementById('login-username');
+        const loginPasswordInput = document.getElementById('login-password');
+        const loginSubmitBtn = document.getElementById('login-submit-btn');
+        const registerUsernameInput = document.getElementById('register-username');
+        const registerPasswordInput = document.getElementById('register-password');
+        const registerSubmitBtn = document.getElementById('register-submit-btn');
 
         // Custom Info Modal Elements
         const modal = document.getElementById('custom-modal');
@@ -534,725 +546,135 @@
         backToChallengesBtn.addEventListener('click', () => showPage('page-challenges'));
 
         // --- Authentication ---
-        onAuthStateChanged(auth, async (user) => {
-            const loginButtons = [loginBtn, loginBtnMobile];
-            if (user) {
-                userId = user.uid;
-                const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
-                const userDocSnap = await getDoc(userDocRef);
-                if (userDocSnap.exists()) {
-                    await setupUserProfile(userId);
-                    loginButtons.forEach(btn => btn.textContent = 'Logout');
-                    listenForChallenges();
-                    listenForFriends();
-                    showPage('page-dashboard');
-                } else {
-                    usernameModal.classList.remove('hidden');
-                }
-            } else {
-                userId = null;
-                userProfile = null;
-                usernameDisplay.textContent = 'Not logged in';
-                friendCodeDisplay.textContent = 'N/A';
-                loginButtons.forEach(btn => btn.textContent = 'Login');
-                friendsList.innerHTML = '<li class="text-gray-400">Login to see friends.</li>';
-                challengesList.innerHTML = '<p class="text-gray-400">Login to see challenges.</p>';
-                dashboardChallengesList.innerHTML = '<p class="text-gray-400">Login to see your challenges.</p>';
-                showPage('page-dashboard');
-            }
-        });
+        function updateUIForLoggedInState(user) {
+            currentUser = user;
+            usernameDisplay.textContent = user.username;
+            friendCodeDisplay.textContent = user.friendCode;
+            loginBtn.textContent = 'Logout';
+            loginBtnMobile.textContent = 'Logout';
+            // Placeholder for fetching user-specific data
+            // listenForChallenges();
+            // listenForFriends();
+            showPage('page-dashboard');
+        }
+
+        function updateUIForLoggedOutState() {
+            currentUser = null;
+            usernameDisplay.textContent = 'Not logged in';
+            friendCodeDisplay.textContent = 'N/A';
+            loginBtn.textContent = 'Login';
+            loginBtnMobile.textContent = 'Login';
+            // Clear all dynamic data
+            friendsList.innerHTML = '<li class="text-gray-400">Login to see friends.</li>';
+            challengesList.innerHTML = '<p class="text-gray-400">Login to see challenges.</p>';
+            dashboardChallengesList.innerHTML = '<p class="text-gray-400">Login to see your challenges.</p>';
+            showPage('page-dashboard');
+        }
 
         function handleAuthAction() {
-            if (auth.currentUser) {
-                signOut(auth);
+            if (currentUser) {
+                currentUser = null;
+                updateUIForLoggedOutState();
                 showModal('You have been logged out.');
             } else {
-                 signInAnonymously(auth).catch(error => {
-                    console.error("Anonymous sign-in error:", error);
-                    showModal("Could not connect. Please try again.");
-                });
+                authModal.classList.remove('hidden');
             }
         }
         
-        async function handleUsernameSubmit() {
-            const username = usernameInput.value.trim();
-            if (!username || username.length < 3) {
-                return showModal("Username must be at least 3 characters.");
-            }
+        authModalCloseBtn.addEventListener('click', () => authModal.classList.add('hidden'));
 
-            const friendCode = `friend-${Math.random().toString(36).substr(2, 9)}`;
-            const userDocRef = doc(db, `artifacts/${appId}/users`, userId);
-            const publicFriendCodeRef = doc(db, `artifacts/${appId}/public/data/friendCodes`, friendCode);
+        loginTabBtn.addEventListener('click', () => {
+            loginTabBtn.classList.add('border-indigo-500', 'text-white');
+            loginTabBtn.classList.remove('border-transparent', 'text-gray-400');
+            registerTabBtn.classList.add('border-transparent', 'text-gray-400');
+            registerTabBtn.classList.remove('border-indigo-500', 'text-white');
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+        });
 
-            const batch = writeBatch(db);
-            batch.set(userDocRef, {
-                uid: userId,
-                username: username,
-                friendCode: friendCode,
-                friends: []
-            });
-            batch.set(publicFriendCodeRef, { uid: userId, username: username });
+        registerTabBtn.addEventListener('click', () => {
+            registerTabBtn.classList.add('border-indigo-500', 'text-white');
+            registerTabBtn.classList.remove('border-transparent', 'text-gray-400');
+            loginTabBtn.classList.add('border-transparent', 'text-gray-400');
+            loginTabBtn.classList.remove('border-indigo-500', 'text-white');
+            registerForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+        });
 
+        async function handleRegister() {
+            const username = registerUsernameInput.value.trim();
+            const password = registerPasswordInput.value;
+            
             try {
-                await batch.commit();
-                usernameModal.classList.add('hidden');
-                await setupUserProfile(userId); // Load the new profile
+                const response = await fetch('/.netlify/functions/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Registration failed.');
+                }
+                
+                showModal(data.message);
+                // Switch to login tab after successful registration
+                loginTabBtn.click();
+                loginUsernameInput.value = username;
+                loginPasswordInput.value = '';
+
             } catch (error) {
-                console.error("Error setting up profile:", error);
-                showModal("Could not create profile. Please try again.");
+                console.error("Registration Error:", error);
+                showModal(`Registration failed: ${error.message}`);
             }
         }
-        usernameSubmitBtn.addEventListener('click', handleUsernameSubmit);
+        registerSubmitBtn.addEventListener('click', handleRegister);
+
+        async function handleLogin() {
+            // This function will be implemented once the login Netlify function is created.
+            showModal("Login functionality is not yet implemented.");
+        }
+        loginSubmitBtn.addEventListener('click', handleLogin);
 
 
         // --- User Profile & Friends ---
-        async function setupUserProfile(uid) {
-            const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
-            const userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-                userProfile = userDocSnap.data();
-                usernameDisplay.textContent = userProfile.username;
-                friendCodeDisplay.textContent = userProfile.friendCode;
-            }
-        }
-        
-        friendCodeDisplay.addEventListener('click', () => {
-            if(userProfile && userProfile.friendCode) {
-                navigator.clipboard.writeText(userProfile.friendCode).then(() => showModal('Friend code copied!'))
-                .catch(err => console.error('Failed to copy text: ', err));
-            }
-        });
-
-        async function addFriend() {
-            if (!userId) return showModal('You must be logged in.');
-            const friendCode = friendCodeInput.value.trim();
-            if (!friendCode) return showModal('Please enter a friend code.');
-
-            const friendCodeRef = doc(db, `artifacts/${appId}/public/data/friendCodes`, friendCode);
-            const friendCodeSnap = await getDoc(friendCodeRef);
-
-            if (!friendCodeSnap.exists()) return showModal('Friend code not found.');
-            
-            const friendData = friendCodeSnap.data();
-            const friendId = friendData.uid;
-
-            if (friendId === userId) return showModal("You can't add yourself.");
-            if (userProfile.friends.some(f => f.uid === friendId)) return showModal("You are already friends.");
-
-            const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
-            await updateDoc(userDocRef, { 
-                friends: arrayUnion({ uid: friendId, username: friendData.username, friendCode: friendCode }) 
-            });
-            friendCodeInput.value = '';
-            showModal('Friend added successfully!');
-        }
-        addFriendBtn.addEventListener('click', addFriend);
-
-        function listenForFriends() {
-            if (!userId) return;
-            const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
-            onSnapshot(userDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    userProfile = docSnap.data();
-                    friendsList.innerHTML = '';
-                    if (userProfile.friends && userProfile.friends.length > 0) {
-                        userProfile.friends.forEach(friend => {
-                            const li = document.createElement('li');
-                            li.className = "bg-gray-700 p-3 rounded-lg flex justify-between items-center";
-                            li.innerHTML = `<span>${friend.username}</span> <span class="text-xs text-gray-400">${friend.friendCode}</span>`;
-                            friendsList.appendChild(li);
-                        });
-                    } else {
-                        friendsList.innerHTML = '<li class="text-gray-400">No friends yet. Add one!</li>';
-                    }
-                }
-            });
-        }
+        // These functions will be re-implemented once the API endpoints are ready.
+        function setupUserProfile(uid) {}
+        function addFriend() { showModal("This feature is coming soon!"); }
+        function listenForFriends() {}
 
         // --- Challenges ---
         function generateChallengeCode() {
             return Math.random().toString(36).substring(2, 12).toUpperCase();
         }
 
-        async function createChallenge() {
-            if (!userId) return showModal('You must be logged in.');
-
-            const challenge = {
-                creator: userId,
-                creatorUsername: userProfile.username,
-                startAmount: parseInt(document.getElementById('challenge-sum').value),
-                timeLimit: parseInt(document.getElementById('time-limit').value),
-                maxLoss: parseInt(document.getElementById('max-loss').value),
-                createdAt: new Date(),
-                participants: [{ uid: userId, username: userProfile.username }],
-                status: 'pending', // 'pending', 'active', 'finished'
-                challengeCode: generateChallengeCode()
-            };
-
-            try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/challenges`), challenge);
-                showModal(`Challenge created! Share code: ${challenge.challengeCode}`);
-                showPage('page-dashboard');
-            } catch (e) {
-                console.error("Error adding document: ", e);
-                showModal('Failed to create challenge.');
-            }
-        }
+        function createChallenge() { showModal("This feature is coming soon!"); }
         createChallengeBtn.addEventListener('click', createChallenge);
 
-        function listenForChallenges() {
-            if(!userId) return;
-            const challengesRef = collection(db, `artifacts/${appId}/public/data/challenges`);
-            const q = query(challengesRef); 
-
-            onSnapshot(q, (querySnapshot) => {
-                challengesList.innerHTML = '';
-                dashboardChallengesList.innerHTML = '';
-                tradeChallengeSelect.innerHTML = '<option value="">-- No Active Challenges --</option>';
-                let userChallenges = [];
-                let activeTradeableChallenges = [];
-
-                if(querySnapshot.empty){
-                    challengesList.innerHTML = '<p class="text-gray-400">No public challenges. Create one!</p>';
-                } else {
-                    querySnapshot.forEach((doc) => {
-                        const challenge = doc.data();
-                        const challengeId = doc.id;
-                        
-                        const challengeEl = renderChallenge(challenge, challengeId);
-                        challengesList.appendChild(challengeEl);
-                        
-                        if (challenge.participants.some(p => p.uid === userId)) {
-                            userChallenges.push({ ...challenge, id: challengeId });
-                            if (challenge.status === 'active') {
-                                activeTradeableChallenges.push({ ...challenge, id: challengeId });
-                            }
-                        }
-                    });
-                }
-                
-                dashboardJoinedCount.textContent = userChallenges.length;
-                if (userChallenges.length > 0) {
-                     userChallenges.forEach(c => {
-                        const el = renderChallenge(c, c.id);
-                        dashboardChallengesList.appendChild(el);
-                     });
-                } else {
-                    dashboardChallengesList.innerHTML = '<p class="text-gray-400">You have not joined any challenges yet.</p>';
-                }
-
-                if (activeTradeableChallenges.length > 0) {
-                    tradeChallengeSelect.innerHTML = '';
-                    activeTradeableChallenges.forEach(c => {
-                        const option = document.createElement('option');
-                        option.value = c.id;
-                        option.textContent = `Code: ${c.challengeCode} ($${c.startAmount.toLocaleString()})`;
-                        tradeChallengeSelect.appendChild(option);
-                    });
-                    tradeChallengeSelect.dispatchEvent(new Event('change'));
-                }
-            });
-        }
-
-        function renderChallenge(challenge, challengeId) {
-            const el = document.createElement('div');
-            el.className = 'bg-gray-700 p-4 rounded-lg';
-            
-            const isCreator = challenge.creator === userId;
-            const isParticipant = challenge.participants.some(p => p.uid === userId);
-            let statusColor = 'text-yellow-400';
-            if (challenge.status === 'active') statusColor = 'text-green-400';
-            if (challenge.status === 'finished') statusColor = 'text-gray-400';
-
-            const details = `
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p><strong>Amount:</strong> $${challenge.startAmount.toLocaleString()}</p>
-                        <p><strong>Time Limit:</strong> ${challenge.timeLimit} days</p>
-                        <p><strong>Participants:</strong> ${challenge.participants.length}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-bold ${statusColor}">${challenge.status.toUpperCase()}</p>
-                        <p class="text-xs text-gray-400 mt-1">Creator: ${challenge.creatorUsername || '...'} </p>
-                    </div>
-                </div>
-                <div class="mt-3 bg-gray-800 p-2 rounded-md text-center cursor-pointer" onclick="navigator.clipboard.writeText('${challenge.challengeCode}')">
-                    <span class="text-sm text-gray-400">Code: </span>
-                    <span class="font-mono tracking-widest">${challenge.challengeCode}</span>
-                </div>
-            `;
-            
-            const actions = document.createElement('div');
-            actions.className = 'mt-4 flex gap-2 flex-wrap';
-
-            // View Details Button
-            const viewBtn = document.createElement('button');
-            viewBtn.textContent = 'View Details';
-            viewBtn.className = 'flex-grow bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg';
-            viewBtn.onclick = () => showPage('page-challenge-detail', { challengeId: challengeId });
-            actions.appendChild(viewBtn);
-
-
-            if (challenge.status === 'pending') {
-                if (isCreator) {
-                    const startBtn = document.createElement('button');
-                    startBtn.textContent = 'Start';
-                    startBtn.className = 'flex-grow bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg';
-                    startBtn.onclick = () => startChallenge(challengeId, challenge.participants, challenge.startAmount);
-                    actions.appendChild(startBtn);
-                }
-                if (!isParticipant) {
-                    const joinBtn = document.createElement('button');
-                    joinBtn.textContent = 'Join';
-                    joinBtn.className = 'flex-grow bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg';
-                    joinBtn.onclick = () => joinChallenge(challengeId);
-                    actions.appendChild(joinBtn);
-                }
-            }
-
-            el.innerHTML = details;
-            el.appendChild(actions);
-            return el;
-        }
-        
-        async function joinChallenge(challengeId) {
-            if (!userId || !userProfile) return showModal('You must be logged in.');
-            
-            const challengeRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}`);
-            try {
-                await updateDoc(challengeRef, { 
-                    participants: arrayUnion({ uid: userId, username: userProfile.username }) 
-                });
-                showModal('You have joined the challenge!');
-            } catch (error) {
-                console.error("Error joining challenge:", error);
-                showModal("Failed to join challenge.");
-            }
-        }
-
-        async function joinChallengeByCode() {
-            if (!userId) return showModal('You must be logged in.');
-            const code = challengeCodeInput.value.trim().toUpperCase();
-            if (!code) return showModal('Please enter a challenge code.');
-
-            const challengesRef = collection(db, `artifacts/${appId}/public/data/challenges`);
-            const q = query(challengesRef, where("challengeCode", "==", code));
-            const querySnapshot = await getDocs(q);
-
-            if (querySnapshot.empty) return showModal('Challenge code not found.');
-            
-            const challengeDoc = querySnapshot.docs[0];
-            const challenge = challengeDoc.data();
-
-            if (challenge.status !== 'pending') return showModal('This challenge has already started and cannot be joined.');
-            if (challenge.participants.some(p => p.uid === userId)) return showModal("You've already joined this challenge.");
-            
-            await joinChallenge(challengeDoc.id);
-            challengeCodeInput.value = '';
-        }
+        function listenForChallenges() {}
+        function renderChallenge(challenge, challengeId) {}
+        function joinChallenge(challengeId) {}
+        function joinChallengeByCode() { showModal("This feature is coming soon!"); }
         joinByCodeBtn.addEventListener('click', joinChallengeByCode);
-
-        async function startChallenge(challengeId, participants, startAmount) {
-            if (!userId) return showModal('You must be logged in.');
-            
-            const challengeRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}`);
-            const batch = writeBatch(db);
-
-            participants.forEach(p => {
-                const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${p.uid}`);
-                batch.set(portfolioRef, {
-                    userId: p.uid,
-                    username: p.username,
-                    balance: startAmount,
-                    trades: []
-                });
-            });
-
-            batch.update(challengeRef, { status: 'active' });
-
-            try {
-                await batch.commit();
-                showModal('Challenge started! Good luck.');
-            } catch (error) {
-                console.error("Error starting challenge:", error);
-                showModal("Failed to start challenge.");
-            }
-        }
+        function startChallenge(challengeId, participants, startAmount) {}
 
         // --- Challenge Detail Page & Chart ---
-        async function loadChallengeDetail(challengeId) {
-            const challengeRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}`);
-            const challengeSnap = await getDoc(challengeRef);
-
-            if (!challengeSnap.exists()) {
-                showModal("Could not load challenge details.");
-                showPage('page-challenges');
-                return;
-            }
-            const challengeData = challengeSnap.data();
-            challengeDetailTitle.textContent = `Challenge: ${challengeData.challengeCode}`;
-            challengeDetailInfo.textContent = `Status: ${challengeData.status} | Starting Amount: $${challengeData.startAmount.toLocaleString()}`;
-
-            const portfoliosRef = collection(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios`);
-            challengeDetailUnsubscribe = onSnapshot(portfoliosRef, (snapshot) => {
-                const portfolioData = snapshot.docs.map(doc => doc.data());
-                renderLeaderboard(portfolioData);
-            });
-        }
-
-        function renderLeaderboard(portfolioData) {
-            const ctx = document.getElementById('leaderboard-chart').getContext('2d');
-            
-            const colors = ['#34D399', '#60A5FA', '#FBBF24', '#F87171', '#818CF8', '#A78BFA'];
-            const participantData = portfolioData.map((p, i) => ({
-                label: p.username,
-                data: [p.balance],
-                backgroundColor: colors[i % colors.length]
-            }));
-
-            if (leaderboardChart) {
-                leaderboardChart.destroy();
-            }
-
-            leaderboardChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Current Balance'],
-                    datasets: participantData
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: { color: '#D1D5DB' }
-                        },
-                        title: {
-                            display: true,
-                            text: 'Live Leaderboard',
-                            color: '#F9FAFB',
-                            font: { size: 16 }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            ticks: { color: '#9CA3AF' },
-                            grid: { color: '#4B5563' }
-                        },
-                        x: {
-                            ticks: { color: '#9CA3AF' },
-                            grid: { color: '#4B5563' }
-                        }
-                    }
-                }
-            });
-            renderLeaderboardFilter(portfolioData);
-        }
-
-        function renderLeaderboardFilter(portfolioData) {
-            leaderboardFilter.innerHTML = '';
-            portfolioData.forEach((p, index) => {
-                const isVisible = leaderboardChart.isDatasetVisible(index);
-                const filterEl = document.createElement('div');
-                filterEl.className = 'flex items-center';
-                filterEl.innerHTML = `
-                    <input id="filter-${p.userId}" type="checkbox" ${isVisible ? 'checked' : ''} data-index="${index}" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                    <label for="filter-${p.userId}" class="ml-2 block text-sm text-gray-300">${p.username}</label>
-                `;
-                leaderboardFilter.appendChild(filterEl);
-            });
-
-            leaderboardFilter.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                checkbox.addEventListener('change', (e) => {
-                    const index = e.target.dataset.index;
-                    leaderboardChart.toggleDataVisibility(index);
-                    leaderboardChart.update();
-                });
-            });
-        }
+        function loadChallengeDetail(challengeId) {}
+        function renderLeaderboard(portfolioData) {}
+        function renderLeaderboardFilter(portfolioData) {}
 
 
         // --- Trading Logic ---
-        let currentPortfolioUnsubscribe = null;
-        let baseBalance = 0;
-
-        async function selectChallengeToTrade() {
-            const challengeId = tradeChallengeSelect.value;
-            
-            if (currentPortfolioUnsubscribe) currentPortfolioUnsubscribe();
-
-            if (!challengeId || !userId) {
-                tradeEquity.textContent = '$0.00';
-                openPositionsList.innerHTML = '<p class="text-gray-400">Select a challenge to see positions.</p>';
-                return;
-            }
-
-            const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${userId}`);
-            
-            currentPortfolioUnsubscribe = onSnapshot(portfolioRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const portfolioData = docSnap.data();
-                    baseBalance = portfolioData.balance; // Store the base balance
-                    renderOpenPositions(portfolioData.trades || [], challengeId);
-                    updateAllPnl(); 
-                } else {
-                    tradeEquity.textContent = 'N/A';
-                    openPositionsList.innerHTML = '<p class="text-gray-400">Portfolio not found for this challenge.</p>';
-                }
-            });
-        }
+        function selectChallengeToTrade() {}
         tradeChallengeSelect.addEventListener('change', selectChallengeToTrade);
 
-        function renderOpenPositions(trades, challengeId) {
-            openPositionsList.innerHTML = '';
-            if (trades.length === 0) {
-                openPositionsList.innerHTML = '<p class="text-gray-400">No open positions for this challenge.</p>';
-                updateAllPnl(); 
-                return;
-            }
-
-            trades.forEach(trade => {
-                const tradeEl = document.createElement('div');
-                tradeEl.className = `p-3 rounded-lg border-l-4`;
-                tradeEl.setAttribute('data-trade-id', trade.id);
-                tradeEl.setAttribute('data-symbol', trade.symbol);
-                tradeEl.setAttribute('data-entry-price', trade.entryPrice);
-                tradeEl.setAttribute('data-lot-size', trade.lotSize);
-                tradeEl.setAttribute('data-trade-type', trade.type);
-
-                tradeEl.innerHTML = `
-                    <div class="grid grid-cols-2 md:grid-cols-7 gap-3 items-center">
-                        <div class="font-bold">${trade.symbol}</div>
-                        <div class="uppercase font-semibold">${trade.type}</div>
-                        <div><span class="text-gray-400">Lots:</span> ${trade.lotSize}</div>
-                        <div><span class="text-gray-400">Entry:</span> ${trade.entryPrice.toFixed(2)}</div>
-                        <div class="pnl font-bold text-lg text-gray-400">$0.00</div>
-                        <div class="flex gap-2">
-                           <input type="number" class="sl-input bg-gray-900 text-sm rounded-md p-1 w-full" value="${trade.stopLoss || ''}" placeholder="SL">
-                           <input type="number" class="tp-input bg-gray-900 text-sm rounded-md p-1 w-full" value="${trade.takeProfit || ''}" placeholder="TP">
-                        </div>
-                        <div class="flex gap-1">
-                           <button class="save-sl-tp-btn bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md">Save</button>
-                           <button class="close-trade-btn bg-gray-600 hover:bg-gray-500 text-white text-xs font-bold py-1 px-2 rounded-md">Close</button>
-                        </div>
-                    </div>
-                `;
-                openPositionsList.appendChild(tradeEl);
-            });
-            
-            document.querySelectorAll('.close-trade-btn, .save-sl-tp-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const tradeRow = e.target.closest('[data-trade-id]');
-                    const tradeId = tradeRow.dataset.tradeId;
-                    if (e.target.classList.contains('close-trade-btn')) {
-                        closeTrade(challengeId, tradeId);
-                    } else {
-                        const sl = tradeRow.querySelector('.sl-input').value;
-                        const tp = tradeRow.querySelector('.tp-input').value;
-                        updateTradeSlTp(challengeId, tradeId, sl, tp);
-                    }
-                });
-            });
-
-            // Subscribe to all unique symbols from open trades
-            const openSymbols = [...new Set(trades.map(t => t.symbol))];
-            openSymbols.forEach(s => livePriceFeed.subscribe(s));
-        }
-        
-        function calculatePnl(trade, currentPrice) {
-            const contractSize = 100000; // Standard lot size for currencies/forex
-            let pnl = 0;
-            if (trade.type === 'buy') {
-                pnl = (currentPrice - trade.entryPrice) * trade.lotSize * contractSize;
-            } else { // sell
-                pnl = (trade.entryPrice - currentPrice) * trade.lotSize * contractSize;
-            }
-            return pnl;
-        }
-
-        async function updateAllPnl() {
-            const tradeElements = Array.from(document.querySelectorAll('[data-trade-id]'));
-            
-            const trades = tradeElements.map(el => ({
-                id: el.dataset.tradeId,
-                symbol: el.dataset.symbol,
-                entryPrice: parseFloat(el.dataset.entryPrice),
-                lotSize: parseFloat(el.dataset.lotSize),
-                type: el.dataset.tradeType
-            }));
-
-            if (trades.length === 0) {
-                tradeEquity.textContent = `$${baseBalance.toFixed(2)}`;
-                return;
-            }
-            
-            let totalUnrealizedPnl = 0;
-            trades.forEach(trade => {
-                const currentPrice = priceCache.get(trade.symbol) || trade.entryPrice;
-                const pnl = calculatePnl(trade, currentPrice);
-                totalUnrealizedPnl += pnl;
-
-                const tradeEl = document.querySelector(`[data-trade-id="${trade.id}"]`);
-                if (tradeEl) {
-                    const pnlEl = tradeEl.querySelector('.pnl');
-                    pnlEl.textContent = `$${pnl.toFixed(2)}`;
-                    pnlEl.classList.toggle('text-green-400', pnl >= 0);
-                    pnlEl.classList.toggle('text-red-400', pnl < 0);
-                    
-                    const borderEl = tradeEl;
-                    borderEl.classList.toggle('border-green-500', pnl >= 0);
-                    borderEl.classList.toggle('border-red-500', pnl < 0);
-                }
-            });
-            
-            const currentEquity = baseBalance + totalUnrealizedPnl;
-            tradeEquity.textContent = `$${currentEquity.toFixed(2)}`;
-            tradeEquity.classList.toggle('text-green-500', currentEquity >= baseBalance);
-            tradeEquity.classList.toggle('text-red-500', currentEquity < baseBalance);
-        }
-
-        async function placeTrade(tradeType) {
-            if (!userId) return showModal('You must be logged in.');
-            
-            const challengeId = tradeChallengeSelect.value;
-            if (!challengeId) return showModal('Please select an active challenge first.');
-
-            const lotSize = parseFloat(lotSizeInput.value);
-            if (isNaN(lotSize) || lotSize <= 0) return showModal('Please enter a valid lot size.');
-
-            const stopLoss = parseFloat(stopLossInput.value) || null;
-            const takeProfit = parseFloat(takeProfitInput.value) || null;
-            
-            let entryPrice = priceCache.get(finnhubSymbol);
-            if (!entryPrice) {
-                 showModal(`Waiting for live price for ${finnhubSymbol}. Please try again in a moment.`);
-                 return;
-            }
-            
-            const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${userId}`);
-
-            try {
-                 const newTrade = {
-                    id: `trade-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-                    type: tradeType,
-                    symbol: finnhubSymbol,
-                    lotSize: lotSize,
-                    entryPrice: entryPrice,
-                    stopLoss: stopLoss,
-                    takeProfit: takeProfit,
-                    status: 'open',
-                    openedAt: new Date()
-                };
-
-                await updateDoc(portfolioRef, {
-                    trades: arrayUnion(newTrade)
-                });
-
-                showModal(`${tradeType.toUpperCase()} order for ${lotSize} lots on ${finnhubSymbol} placed successfully!`);
-            } catch (error) {
-                console.error("Trade Error: ", error);
-                showModal(`Failed to place trade: ${error}`);
-            }
-        }
-
-        async function updateTradeSlTp(challengeId, tradeId, stopLoss, takeProfit) {
-            const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${userId}`);
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const portfolioDoc = await transaction.get(portfolioRef);
-                    if (!portfolioDoc.exists()) throw "Portfolio not found!";
-
-                    const portfolioData = portfolioDoc.data();
-                    const trades = portfolioData.trades || [];
-                    const tradeIndex = trades.findIndex(t => t.id === tradeId);
-
-                    if (tradeIndex === -1) throw "Trade not found.";
-
-                    trades[tradeIndex].stopLoss = parseFloat(stopLoss) || null;
-                    trades[tradeIndex].takeProfit = parseFloat(takeProfit) || null;
-
-                    transaction.update(portfolioRef, { trades: trades });
-                });
-                showModal('Trade updated successfully!');
-            } catch (error) {
-                console.error("Update SL/TP Error:", error);
-                showModal(`Failed to update trade: ${error}`);
-            }
-        }
-
-        async function closeTrade(challengeId, tradeId) {
-             if (!userId) return showModal('You must be logged in.');
-             const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${userId}`);
-
-             try {
-                let pnl = 0;
-                await runTransaction(db, async (transaction) => {
-                    const portfolioDoc = await transaction.get(portfolioRef);
-                    if (!portfolioDoc.exists()) throw "Portfolio not found!";
-
-                    const portfolioData = portfolioDoc.data();
-                    const trades = portfolioData.trades || [];
-                    const tradeToClose = trades.find(t => t.id === tradeId);
-
-                    if (!tradeToClose) throw "Trade not found to close.";
-                    
-                    const closePrice = priceCache.get(tradeToClose.symbol);
-                    if(!closePrice) throw new Error(`Could not get live closing price for ${tradeToClose.symbol}`);
-                    
-                    pnl = calculatePnl(tradeToClose, closePrice);
-
-                    const newBalance = portfolioData.balance + pnl;
-                    const updatedTrades = trades.filter(t => t.id !== tradeId);
-
-                    transaction.update(portfolioRef, {
-                        balance: newBalance,
-                        trades: updatedTrades
-                    });
-                });
-                showModal(`Trade closed! P/L: $${pnl.toFixed(2)}`);
-             } catch (error) {
-                console.error("Close Trade Error:", error);
-                showModal(`Failed to close trade: ${error}`);
-             }
-        }
-
-        async function closeAllPositions() {
-            const challengeId = tradeChallengeSelect.value;
-            if (!challengeId) return showModal('Please select a challenge first.');
-            if (!userId) return showModal('You must be logged in.');
-
-            const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${userId}`);
-
-            try {
-                let totalPnl = 0;
-                await runTransaction(db, async (transaction) => {
-                    const portfolioDoc = await transaction.get(portfolioRef);
-                    if (!portfolioDoc.exists()) throw "Portfolio not found!";
-                    
-                    const portfolioData = portfolioDoc.data();
-                    const trades = portfolioData.trades || [];
-
-                    if (trades.length === 0) throw "No open positions to close.";
-
-                    for(const trade of trades) {
-                        const closePrice = priceCache.get(trade.symbol) || trade.entryPrice;
-                        totalPnl += calculatePnl(trade, closePrice);
-                    }
-
-                    const newBalance = portfolioData.balance + totalPnl;
-                    
-                    transaction.update(portfolioRef, {
-                        balance: newBalance,
-                        trades: []
-                    });
-                });
-                showModal(`All positions closed! Total P/L: $${totalPnl.toFixed(2)}`);
-            } catch (error) {
-                console.error("Close All Error:", error);
-                showModal(`Failed to close all positions: ${error}`);
-            }
-        }
+        function renderOpenPositions(trades, challengeId) {}
+        function calculatePnl(trade, currentPrice) {}
+        async function updateAllPnl() {}
+        async function placeTrade(tradeType) { showModal("This feature is coming soon!"); }
+        async function updateTradeSlTp(challengeId, tradeId, stopLoss, takeProfit) {}
+        async function closeTrade(challengeId, tradeId) {}
+        async function closeAllPositions() {}
 
         buyBtn.addEventListener('click', () => placeTrade('buy'));
         sellBtn.addEventListener('click', () => placeTrade('sell'));
@@ -1283,9 +705,6 @@
 
         // Initial load
         showPage('page-dashboard');
-        if (!auth.currentUser) {
-            handleAuthAction();
-        }
     </script>
 </body>
 </html>

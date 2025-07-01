@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeLink - Trading Challenge Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom modal styles */
+        .modal-backdrop {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-3">
+            <div class="flex justify-between items-center">
+                <div class="text-2xl font-bold text-white">TradeLink</div>
+                <div class="hidden md:flex items-center space-x-2">
+                    <a href="#" id="nav-dashboard" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
+                    <a href="#" id="nav-challenges" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Challenges</a>
+                    <a href="#" id="nav-friends" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Friends</a>
+                    <a href="#" id="nav-trade" class="nav-link py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Trade</a>
+                    <button id="login-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg ml-2">
+                        Login
+                    </button>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-btn" class="text-white focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+             <!-- Mobile Menu -->
+            <div id="mobile-menu" class="md:hidden hidden mt-3 space-y-1">
+                <a href="#" id="nav-dashboard-mobile" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
+                <a href="#" id="nav-challenges-mobile" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Challenges</a>
+                <a href="#" id="nav-friends-mobile" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Friends</a>
+                <a href="#" id="nav-trade-mobile" class="nav-link block py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">Trade</a>
+                <button id="login-btn-mobile" class="w-full text-left bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg mt-2">
+                    Login
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+
+        <!-- Page: Dashboard -->
+        <div id="page-dashboard" class="page-content">
+            <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <!-- User Profile Card -->
+                <div class="md:col-span-1 bg-gray-800 rounded-lg p-6 shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4">My Profile</h2>
+                    <div id="user-profile" class="space-y-3">
+                        <p><strong>Username:</strong> <span id="username-display" class="text-lg font-bold text-indigo-400">Not logged in</span></p>
+                        <p><strong>Friend Code:</strong> <span id="friend-code-display" class="text-sm bg-gray-700 px-2 py-1 rounded-md cursor-pointer">N/A</span></p>
+                    </div>
+                </div>
+                 <!-- Stats Card -->
+                <div class="md:col-span-2 bg-gray-800 rounded-lg p-6 shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4">My Stats (All Time)</h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                        <div>
+                            <p class="text-2xl font-bold text-green-500">+$0.00</p>
+                            <p class="text-gray-400">Total P/L</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold">0%</p>
+                            <p class="text-gray-400">Win Rate</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold">0</p>
+                            <p class="text-gray-400">Challenges Won</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold" id="dashboard-joined-count">0</p>
+                            <p class="text-gray-400">Challenges Joined</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-gray-800 rounded-lg p-6 shadow-lg">
+                <h2 class="text-xl font-semibold mb-4">My Challenges</h2>
+                <div id="dashboard-challenges-list" class="space-y-4">
+                    <p class="text-gray-400">You have not joined any challenges yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page: Challenges -->
+        <div id="page-challenges" class="page-content hidden">
+            <h1 class="text-3xl font-bold mb-6">Challenges</h1>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 space-y-8">
+                    <!-- Create Challenge -->
+                    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                        <h2 class="text-xl font-semibold mb-4">Create a New Challenge</h2>
+                        <div class="space-y-4">
+                            <!-- Form fields -->
+                            <div>
+                                <label for="challenge-sum" class="block text-sm font-medium text-gray-300">Starting Capital</label>
+                                <select id="challenge-sum" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="5000">$5,000</option>
+                                    <option value="10000">$10,000</option>
+                                    <option value="50000">$50,000</option>
+                                    <option value="100000">$100,000</option>
+                                    <option value="200000">$200,000</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="time-limit" class="block text-sm font-medium text-gray-300">Time Limit (days)</label>
+                                <input type="number" id="time-limit" value="30" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label for="max-loss" class="block text-sm font-medium text-gray-300">Max Loss (%)</label>
+                                <input type="number" id="max-loss" value="10" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <button id="create-challenge-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Create Challenge</button>
+                        </div>
+                    </div>
+                     <!-- Join by Code -->
+                    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                        <h2 class="text-xl font-semibold mb-4">Join with Code</h2>
+                        <div class="space-y-3">
+                            <input type="text" id="challenge-code-input" placeholder="Enter challenge code" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button id="join-by-code-btn" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">Join Challenge</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                        <h2 class="text-xl font-semibold mb-4">All Public Challenges</h2>
+                        <div id="challenges-list" class="space-y-4">
+                            <p class="text-gray-400">No active challenges.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page: Challenge Detail -->
+        <div id="page-challenge-detail" class="page-content hidden">
+            <button id="back-to-challenges-btn" class="mb-6 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">&larr; Back to Challenges</button>
+            <h1 id="challenge-detail-title" class="text-3xl font-bold mb-2">Challenge Details</h1>
+            <p id="challenge-detail-info" class="text-gray-400 mb-6"></p>
+            <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                <h2 class="text-xl font-semibold mb-4">Participant Leaderboard</h2>
+                <div class="mb-6">
+                    <canvas id="leaderboard-chart"></canvas>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Filter Participants</h3>
+                    <div id="leaderboard-filter" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                        <!-- Checkboxes will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Page: Friends -->
+        <div id="page-friends" class="page-content hidden">
+             <h1 class="text-3xl font-bold mb-6">Friends</h1>
+             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                        <h2 class="text-xl font-semibold mb-4">Add a Friend</h2>
+                        <div class="space-y-3">
+                            <input type="text" id="friend-code-input" placeholder="Enter friend's code" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button id="add-friend-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Add Friend</button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                        <h2 class="text-xl font-semibold mb-4">My Friends List</h2>
+                        <ul id="friends-list" class="space-y-3">
+                            <li class="text-gray-400">No friends yet.</li>
+                        </ul>
+                    </div>
+                </div>
+             </div>
+        </div>
+        
+        <!-- Page: Trade -->
+        <div id="page-trade" class="page-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-3xl font-bold">Trade Station</h1>
+                <div id="websocket-status" class="flex items-center gap-2 text-sm">
+                    <div class="status-light w-3 h-3 rounded-full bg-red-500"></div>
+                    <span class="status-text">Disconnected</span>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end mb-6">
+                    <!-- Challenge Selection -->
+                    <div class="lg:col-span-1">
+                        <label for="trade-challenge-select" class="block text-sm font-medium text-gray-300">Select Challenge</label>
+                        <select id="trade-challenge-select" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">-- No Active Challenges --</option>
+                        </select>
+                    </div>
+                    <!-- Symbol Input -->
+                    <div class="lg:col-span-1">
+                        <label for="symbol-input" class="block text-sm font-medium text-gray-300">Symbol</label>
+                        <input type="text" id="symbol-input" value="AAPL" placeholder="e.g., AAPL, NZDJPY" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <!-- Balance Display -->
+                    <div class="text-center">
+                        <p class="text-gray-400">Live Equity</p>
+                        <p id="trade-equity" class="text-3xl font-bold text-green-500">$0.00</p>
+                    </div>
+                    <!-- Trade Inputs -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                             <label for="lot-size-input" class="block text-sm font-medium text-gray-300">Lot Size</label>
+                             <input type="number" id="lot-size-input" value="0.01" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                             <label for="stop-loss-input" class="block text-sm font-medium text-gray-300">Stop Loss</label>
+                             <input type="number" id="stop-loss-input" placeholder="Price" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                             <label for="take-profit-input" class="block text-sm font-medium text-gray-300">Take Profit</label>
+                             <input type="number" id="take-profit-input" placeholder="Price" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+                <!-- Buy/Sell Buttons -->
+                 <div class="grid grid-cols-2 gap-4 mb-8">
+                    <button id="buy-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-xl disabled:opacity-50 disabled:cursor-not-allowed" disabled>BUY</button>
+                    <button id="sell-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg text-xl disabled:opacity-50 disabled:cursor-not-allowed" disabled>SELL</button>
+                </div>
+
+                <!-- TradingView Widget -->
+                <div class="tradingview-widget-container mb-8" style="height:500px; width:100%;">
+                    <div id="tradingview_f4a8c" style="height:100%; width:100%;"></div>
+                </div>
+
+                <!-- Open Positions -->
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Open Positions</h2>
+                    <button id="close-all-btn" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg">Close All</button>
+                </div>
+                <div id="open-positions-list" class="space-y-3">
+                    <p class="text-gray-400">No open positions for this challenge.</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+    
+    <!-- Username Modal -->
+    <div id="username-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6">
+            <h2 class="text-2xl font-bold mb-4 text-white">Choose Your Username</h2>
+            <p class="text-gray-400 mb-4">This will be your name for this session.</p>
+            <input type="text" id="username-input" placeholder="Enter username" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button id="username-submit-btn" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Confirm</button>
+        </div>
+    </div>
+
+
+    <!-- Custom Info Modal -->
+    <div id="custom-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50 opacity-0">
+        <div class="modal-content bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 transform scale-95">
+            <p id="modal-message" class="text-white text-lg mb-4"></p>
+            <button id="modal-close-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Close</button>
+        </div>
+    </div>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        // These variables will be provided by the environment.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Import statements
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, collection, onSnapshot, query, where, getDocs, updateDoc, arrayUnion, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- IMPORTANT: PASTE YOUR FREE API KEY HERE ---
+        // Get a free key from https://finnhub.io/register
+        const FINNHUB_API_KEY = 'd1hp2f1r01qsvr2bhqh0d1hp2f1r01qsvr2bhqhg'; 
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userId = null;
+        let userProfile = null;
+        let tradingViewWidget = null;
+        let leaderboardChart = null;
+        let challengeDetailUnsubscribe = null;
+        let finnhubSymbol = 'AAPL'; // Symbol for Finnhub API
+        let tradingViewSymbol = 'AAPL'; // Symbol for TradingView Widget
+
+        // DOM Elements
+        const loginBtn = document.getElementById('login-btn');
+        const loginBtnMobile = document.getElementById('login-btn-mobile');
+        const usernameDisplay = document.getElementById('username-display');
+        const friendCodeDisplay = document.getElementById('friend-code-display');
+        const addFriendBtn = document.getElementById('add-friend-btn');
+        const friendCodeInput = document.getElementById('friend-code-input');
+        const friendsList = document.getElementById('friends-list');
+        const createChallengeBtn = document.getElementById('create-challenge-btn');
+        const challengesList = document.getElementById('challenges-list');
+        const dashboardChallengesList = document.getElementById('dashboard-challenges-list');
+        const dashboardJoinedCount = document.getElementById('dashboard-joined-count');
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const joinByCodeBtn = document.getElementById('join-by-code-btn');
+        const challengeCodeInput = document.getElementById('challenge-code-input');
+        
+        // Trade Page Elements
+        const tradeChallengeSelect = document.getElementById('trade-challenge-select');
+        const tradeEquity = document.getElementById('trade-equity');
+        const symbolInput = document.getElementById('symbol-input');
+        const lotSizeInput = document.getElementById('lot-size-input');
+        const stopLossInput = document.getElementById('stop-loss-input');
+        const takeProfitInput = document.getElementById('take-profit-input');
+        const buyBtn = document.getElementById('buy-btn');
+        const sellBtn = document.getElementById('sell-btn');
+        const openPositionsList = document.getElementById('open-positions-list');
+        const closeAllBtn = document.getElementById('close-all-btn');
+        const websocketStatus = document.getElementById('websocket-status');
+
+        // Challenge Detail Elements
+        const backToChallengesBtn = document.getElementById('back-to-challenges-btn');
+        const challengeDetailTitle = document.getElementById('challenge-detail-title');
+        const challengeDetailInfo = document.getElementById('challenge-detail-info');
+        const leaderboardFilter = document.getElementById('leaderboard-filter');
+
+        // Username Modal Elements
+        const usernameModal = document.getElementById('username-modal');
+        const usernameInput = document.getElementById('username-input');
+        const usernameSubmitBtn = document.getElementById('username-submit-btn');
+
+        // Custom Info Modal Elements
+        const modal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // --- Live Price Feed (WebSocket) ---
+        const priceCache = new Map();
+        
+        const livePriceFeed = {
+            socket: null,
+            subscribedSymbols: new Set(),
+            pnlInterval: null,
+            connect: function() {
+                if (this.socket || !FINNHUB_API_KEY || FINNHUB_API_KEY === 'YOUR_FINNHUB_API_KEY') {
+                    if(!this.socket) console.warn("Finnhub API key missing. Live prices disabled.");
+                    websocketStatus.querySelector('.status-light').classList.replace('bg-green-500', 'bg-red-500');
+                    websocketStatus.querySelector('.status-text').textContent = "API Key Missing";
+                    return;
+                }
+                this.socket = new WebSocket(`wss://ws.finnhub.io?token=${FINNHUB_API_KEY}`);
+                
+                this.socket.addEventListener('open', () => {
+                    console.log('Finnhub WebSocket connected.');
+                    websocketStatus.querySelector('.status-light').classList.replace('bg-red-500', 'bg-green-500');
+                    websocketStatus.querySelector('.status-text').textContent = "Connected";
+                    const openSymbols = [...new Set(Array.from(document.querySelectorAll('[data-symbol]')).map(el => el.dataset.symbol))];
+                    openSymbols.forEach(s => this.subscribe(s));
+                    this.subscribe(finnhubSymbol);
+                });
+
+                this.socket.addEventListener('message', (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'trade') {
+                        data.data.forEach(trade => {
+                            priceCache.set(trade.s, trade.p);
+                            if (trade.s === finnhubSymbol) {
+                                buyBtn.disabled = false;
+                                sellBtn.disabled = false;
+                                websocketStatus.querySelector('.status-text').textContent = "Connected";
+                            }
+                        });
+                    }
+                });
+
+                this.socket.addEventListener('close', () => {
+                    console.log('Finnhub WebSocket disconnected.');
+                    websocketStatus.querySelector('.status-light').classList.replace('bg-green-500', 'bg-red-500');
+                    websocketStatus.querySelector('.status-text').textContent = "Disconnected";
+                    this.socket = null;
+                });
+
+                this.socket.addEventListener('error', (error) => {
+                    console.error('WebSocket Error:', error);
+                    websocketStatus.querySelector('.status-text').textContent = "Error";
+                });
+
+                if (this.pnlInterval) clearInterval(this.pnlInterval);
+                this.pnlInterval = setInterval(updateAllPnl, 2000);
+            },
+            disconnect: function() {
+                if (this.socket) {
+                    this.socket.close();
+                }
+                if (this.pnlInterval) {
+                    clearInterval(this.pnlInterval);
+                    this.pnlInterval = null;
+                }
+            },
+            subscribe: function(symbol) {
+                if (this.socket && this.socket.readyState === 1 && !this.subscribedSymbols.has(symbol)) {
+                    this.socket.send(JSON.stringify({'type':'subscribe', 'symbol': symbol}));
+                    this.subscribedSymbols.add(symbol);
+                    console.log(`Subscribed to ${symbol}`);
+                }
+            },
+            unsubscribe: function(symbol) {
+                if (this.socket && this.socket.readyState === 1 && this.subscribedSymbols.has(symbol)) {
+                    this.socket.send(JSON.stringify({'type':'unsubscribe','symbol': symbol}));
+                    this.subscribedSymbols.delete(symbol);
+                    console.log(`Unsubscribed from ${symbol}`);
+                }
+            }
+        };
+
+        // --- Utility Functions ---
+        function showModal(message) {
+            modalMessage.textContent = message;
+            modal.classList.remove('hidden');
+            const content = modal.querySelector('.modal-content');
+            if (!content) return;
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function hideModal() {
+            const content = modal.querySelector('.modal-content');
+            if (!content) return;
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+        modalCloseBtn.addEventListener('click', hideModal);
+
+        function initializeTradingView() {
+            const container = document.getElementById('tradingview_f4a8c');
+            if (!container) return;
+            container.innerHTML = ''; // Clear previous widget
+            tradingViewWidget = new TradingView.widget({
+              "autosize": true, 
+              "symbol": tradingViewSymbol, 
+              "interval": "D", "timezone": "Etc/UTC",
+              "theme": "dark", "style": "1", "locale": "en", "toolbar_bg": "#f1f3f6",
+              "enable_publishing": false, "allow_symbol_change": true, "container_id": "tradingview_f4a8c"
+            });
+        }
+        
+        // --- Page Navigation ---
+        const pages = document.querySelectorAll('.page-content');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        function showPage(pageId, context = null) {
+            // Unsubscribe from real-time listeners when leaving detail page
+            if (challengeDetailUnsubscribe) {
+                challengeDetailUnsubscribe();
+                challengeDetailUnsubscribe = null;
+            }
+            livePriceFeed.disconnect();
+
+            pages.forEach(page => page.classList.add('hidden'));
+            const pageToShow = document.getElementById(pageId);
+            if(pageToShow) pageToShow.classList.remove('hidden');
+            
+            navLinks.forEach(link => link.classList.remove('bg-gray-700', 'text-white'));
+            const navId = pageId.startsWith('page-challenge-detail') ? 'challenges' : pageId.split('-')[1];
+            document.querySelectorAll(`[id^="nav-${navId}"]`).forEach(link => {
+                link.classList.add('bg-gray-700', 'text-white');
+            });
+
+            if (pageId === 'page-trade') {
+                initializeTradingView();
+                livePriceFeed.connect();
+            }
+
+            if (pageId === 'page-challenge-detail' && context && context.challengeId) {
+                loadChallengeDetail(context.challengeId);
+            }
+
+            mobileMenu.classList.add('hidden');
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageId = `page-${e.target.id.split('-')[1]}`;
+                showPage(pageId);
+            });
+        });
+        
+        mobileMenuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+        backToChallengesBtn.addEventListener('click', () => showPage('page-challenges'));
+
+        // --- Authentication ---
+        onAuthStateChanged(auth, async (user) => {
+            const loginButtons = [loginBtn, loginBtnMobile];
+            if (user && !user.isAnonymous) {
+                 userId = user.uid;
+                await setupUserProfile(userId);
+                loginButtons.forEach(btn => btn.textContent = 'Logout');
+                listenForChallenges();
+                listenForFriends();
+                showPage('page-dashboard');
+            } else if (user && user.isAnonymous) {
+                userId = user.uid;
+                const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                    await setupUserProfile(userId);
+                    loginButtons.forEach(btn => btn.textContent = 'Logout');
+                    listenForChallenges();
+                    listenForFriends();
+                    showPage('page-dashboard');
+                } else {
+                    usernameModal.classList.remove('hidden');
+                }
+            }
+            else {
+                userId = null;
+                userProfile = null;
+                usernameDisplay.textContent = 'Not logged in';
+                friendCodeDisplay.textContent = 'N/A';
+                loginButtons.forEach(btn => btn.textContent = 'Login');
+                friendsList.innerHTML = '<li class="text-gray-400">Login to see friends.</li>';
+                challengesList.innerHTML = '<p class="text-gray-400">Login to see challenges.</p>';
+                dashboardChallengesList.innerHTML = '<p class="text-gray-400">Login to see your challenges.</p>';
+                showPage('page-dashboard');
+            }
+        });
+
+        function handleAuthAction() {
+            if (auth.currentUser) {
+                signOut(auth);
+                showModal('You have been logged out.');
+            } else {
+                 signInAnonymously(auth).catch(error => {
+                    console.error("Anonymous sign-in error:", error);
+                    showModal("Could not connect. Please try again.");
+                });
+            }
+        }
+        [loginBtn, loginBtnMobile].forEach(btn => btn.addEventListener('click', handleAuthAction));
+        
+        async function handleUsernameSubmit() {
+            const username = usernameInput.value.trim();
+            if (!username || username.length < 3) {
+                return showModal("Username must be at least 3 characters.");
+            }
+
+            const friendCode = `friend-${Math.random().toString(36).substr(2, 9)}`;
+            const userDocRef = doc(db, `artifacts/${appId}/users`, userId);
+            const publicFriendCodeRef = doc(db, `artifacts/${appId}/public/data/friendCodes`, friendCode);
+
+            const batch = writeBatch(db);
+            batch.set(userDocRef, {
+                uid: userId,
+                username: username,
+                friendCode: friendCode,
+                friends: []
+            });
+            batch.set(publicFriendCodeRef, { uid: userId, username: username });
+
+            try {
+                await batch.commit();
+                usernameModal.classList.add('hidden');
+                await setupUserProfile(userId); // Load the new profile
+            } catch (error) {
+                console.error("Error setting up profile:", error);
+                showModal("Could not create profile. Please try again.");
+            }
+        }
+        usernameSubmitBtn.addEventListener('click', handleUsernameSubmit);
+
+
+        // --- User Profile & Friends ---
+        async function setupUserProfile(uid) {
+            const userDocRef = doc(db, `artifacts/${appId}/users/${uid}`);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+                userProfile = userDocSnap.data();
+                usernameDisplay.textContent = userProfile.username;
+                friendCodeDisplay.textContent = userProfile.friendCode;
+            }
+        }
+        
+        friendCodeDisplay.addEventListener('click', () => {
+            if(userProfile && userProfile.friendCode) {
+                navigator.clipboard.writeText(userProfile.friendCode).then(() => showModal('Friend code copied!'))
+                .catch(err => console.error('Failed to copy text: ', err));
+            }
+        });
+
+        async function addFriend() {
+            if (!userId) return showModal('You must be logged in.');
+            const friendCode = friendCodeInput.value.trim();
+            if (!friendCode) return showModal('Please enter a friend code.');
+
+            const friendCodeRef = doc(db, `artifacts/${appId}/public/data/friendCodes`, friendCode);
+            const friendCodeSnap = await getDoc(friendCodeRef);
+
+            if (!friendCodeSnap.exists()) return showModal('Friend code not found.');
+            
+            const friendData = friendCodeSnap.data();
+            const friendId = friendData.uid;
+
+            if (friendId === userId) return showModal("You can't add yourself.");
+            if (userProfile.friends.some(f => f.uid === friendId)) return showModal("You are already friends.");
+
+            const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
+            await updateDoc(userDocRef, { 
+                friends: arrayUnion({ uid: friendId, username: friendData.username, friendCode: friendCode }) 
+            });
+            friendCodeInput.value = '';
+            showModal('Friend added successfully!');
+        }
+        addFriendBtn.addEventListener('click', addFriend);
+
+        function listenForFriends() {
+            if (!userId) return;
+            const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
+            onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    userProfile = docSnap.data();
+                    friendsList.innerHTML = '';
+                    if (userProfile.friends && userProfile.friends.length > 0) {
+                        userProfile.friends.forEach(friend => {
+                            const li = document.createElement('li');
+                            li.className = "bg-gray-700 p-3 rounded-lg flex justify-between items-center";
+                            li.innerHTML = `<span>${friend.username}</span> <span class="text-xs text-gray-400">${friend.friendCode}</span>`;
+                            friendsList.appendChild(li);
+                        });
+                    } else {
+                        friendsList.innerHTML = '<li class="text-gray-400">No friends yet. Add one!</li>';
+                    }
+                }
+            });
+        }
+
+        // --- Challenges ---
+        function generateChallengeCode() {
+            return Math.random().toString(36).substring(2, 12).toUpperCase();
+        }
+
+        async function createChallenge() {
+            if (!userId) return showModal('You must be logged in.');
+
+            const challenge = {
+                creator: userId,
+                creatorUsername: userProfile.username,
+                startAmount: parseInt(document.getElementById('challenge-sum').value),
+                timeLimit: parseInt(document.getElementById('time-limit').value),
+                maxLoss: parseInt(document.getElementById('max-loss').value),
+                createdAt: new Date(),
+                participants: [{ uid: userId, username: userProfile.username }],
+                status: 'pending', // 'pending', 'active', 'finished'
+                challengeCode: generateChallengeCode()
+            };
+
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/challenges`), challenge);
+                showModal(`Challenge created! Share code: ${challenge.challengeCode}`);
+                showPage('page-dashboard');
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showModal('Failed to create challenge.');
+            }
+        }
+        createChallengeBtn.addEventListener('click', createChallenge);
+
+        function listenForChallenges() {
+            if(!userId) return;
+            const challengesRef = collection(db, `artifacts/${appId}/public/data/challenges`);
+            const q = query(challengesRef); 
+
+            onSnapshot(q, (querySnapshot) => {
+                challengesList.innerHTML = '';
+                dashboardChallengesList.innerHTML = '';
+                tradeChallengeSelect.innerHTML = '<option value="">-- No Active Challenges --</option>';
+                let userChallenges = [];
+                let activeTradeableChallenges = [];
+
+                if(querySnapshot.empty){
+                    challengesList.innerHTML = '<p class="text-gray-400">No public challenges. Create one!</p>';
+                } else {
+                    querySnapshot.forEach((doc) => {
+                        const challenge = doc.data();
+                        const challengeId = doc.id;
+                        
+                        const challengeEl = renderChallenge(challenge, challengeId);
+                        challengesList.appendChild(challengeEl);
+                        
+                        if (challenge.participants.some(p => p.uid === userId)) {
+                            userChallenges.push({ ...challenge, id: challengeId });
+                            if (challenge.status === 'active') {
+                                activeTradeableChallenges.push({ ...challenge, id: challengeId });
+                            }
+                        }
+                    });
+                }
+                
+                dashboardJoinedCount.textContent = userChallenges.length;
+                if (userChallenges.length > 0) {
+                     userChallenges.forEach(c => {
+                        const el = renderChallenge(c, c.id);
+                        dashboardChallengesList.appendChild(el);
+                     });
+                } else {
+                    dashboardChallengesList.innerHTML = '<p class="text-gray-400">You have not joined any challenges yet.</p>';
+                }
+
+                if (activeTradeableChallenges.length > 0) {
+                    tradeChallengeSelect.innerHTML = '';
+                    activeTradeableChallenges.forEach(c => {
+                        const option = document.createElement('option');
+                        option.value = c.id;
+                        option.textContent = `Code: ${c.challengeCode} ($${c.startAmount.toLocaleString()})`;
+                        tradeChallengeSelect.appendChild(option);
+                    });
+                    tradeChallengeSelect.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+
+        function renderChallenge(challenge, challengeId) {
+            const el = document.createElement('div');
+            el.className = 'bg-gray-700 p-4 rounded-lg';
+            
+            const isCreator = challenge.creator === userId;
+            const isParticipant = challenge.participants.some(p => p.uid === userId);
+            let statusColor = 'text-yellow-400';
+            if (challenge.status === 'active') statusColor = 'text-green-400';
+            if (challenge.status === 'finished') statusColor = 'text-gray-400';
+
+            const details = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p><strong>Amount:</strong> $${challenge.startAmount.toLocaleString()}</p>
+                        <p><strong>Time Limit:</strong> ${challenge.timeLimit} days</p>
+                        <p><strong>Participants:</strong> ${challenge.participants.length}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold ${statusColor}">${challenge.status.toUpperCase()}</p>
+                        <p class="text-xs text-gray-400 mt-1">Creator: ${challenge.creatorUsername || '...'} </p>
+                    </div>
+                </div>
+                <div class="mt-3 bg-gray-800 p-2 rounded-md text-center cursor-pointer" onclick="navigator.clipboard.writeText('${challenge.challengeCode}')">
+                    <span class="text-sm text-gray-400">Code: </span>
+                    <span class="font-mono tracking-widest">${challenge.challengeCode}</span>
+                </div>
+            `;
+            
+            const actions = document.createElement('div');
+            actions.className = 'mt-4 flex gap-2 flex-wrap';
+
+            // View Details Button
+            const viewBtn = document.createElement('button');
+            viewBtn.textContent = 'View Details';
+            viewBtn.className = 'flex-grow bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg';
+            viewBtn.onclick = () => showPage('page-challenge-detail', { challengeId: challengeId });
+            actions.appendChild(viewBtn);
+
+
+            if (challenge.status === 'pending') {
+                if (isCreator) {
+                    const startBtn = document.createElement('button');
+                    startBtn.textContent = 'Start';
+                    startBtn.className = 'flex-grow bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg';
+                    startBtn.onclick = () => startChallenge(challengeId, challenge.participants, challenge.startAmount);
+                    actions.appendChild(startBtn);
+                }
+                if (!isParticipant) {
+                    const joinBtn = document.createElement('button');
+                    joinBtn.textContent = 'Join';
+                    joinBtn.className = 'flex-grow bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg';
+                    joinBtn.onclick = () => joinChallenge(challengeId);
+                    actions.appendChild(joinBtn);
+                }
+            }
+
+            el.innerHTML = details;
+            el.appendChild(actions);
+            return el;
+        }
+        
+        async function joinChallenge(challengeId) {
+            if (!userId || !userProfile) return showModal('You must be logged in.');
+            
+            const challengeRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}`);
+            try {
+                await updateDoc(challengeRef, { 
+                    participants: arrayUnion({ uid: userId, username: userProfile.username }) 
+                });
+                showModal('You have joined the challenge!');
+            } catch (error) {
+                console.error("Error joining challenge:", error);
+                showModal("Failed to join challenge.");
+            }
+        }
+
+        async function joinChallengeByCode() {
+            if (!userId) return showModal('You must be logged in.');
+            const code = challengeCodeInput.value.trim().toUpperCase();
+            if (!code) return showModal('Please enter a challenge code.');
+
+            const challengesRef = collection(db, `artifacts/${appId}/public/data/challenges`);
+            const q = query(challengesRef, where("challengeCode", "==", code));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) return showModal('Challenge code not found.');
+            
+            const challengeDoc = querySnapshot.docs[0];
+            const challenge = challengeDoc.data();
+
+            if (challenge.status !== 'pending') return showModal('This challenge has already started and cannot be joined.');
+            if (challenge.participants.some(p => p.uid === userId)) return showModal("You've already joined this challenge.");
+            
+            await joinChallenge(challengeDoc.id);
+            challengeCodeInput.value = '';
+        }
+        joinByCodeBtn.addEventListener('click', joinChallengeByCode);
+
+        async function startChallenge(challengeId, participants, startAmount) {
+            if (!userId) return showModal('You must be logged in.');
+            
+            const challengeRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}`);
+            const batch = writeBatch(db);
+
+            participants.forEach(p => {
+                const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${p.uid}`);
+                batch.set(portfolioRef, {
+                    userId: p.uid,
+                    username: p.username,
+                    balance: startAmount,
+                    trades: []
+                });
+            });
+
+            batch.update(challengeRef, { status: 'active' });
+
+            try {
+                await batch.commit();
+                showModal('Challenge started! Good luck.');
+            } catch (error) {
+                console.error("Error starting challenge:", error);
+                showModal("Failed to start challenge.");
+            }
+        }
+
+        // --- Challenge Detail Page & Chart ---
+        async function loadChallengeDetail(challengeId) {
+            const challengeRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}`);
+            const challengeSnap = await getDoc(challengeRef);
+
+            if (!challengeSnap.exists()) {
+                showModal("Could not load challenge details.");
+                showPage('page-challenges');
+                return;
+            }
+            const challengeData = challengeSnap.data();
+            challengeDetailTitle.textContent = `Challenge: ${challengeData.challengeCode}`;
+            challengeDetailInfo.textContent = `Status: ${challengeData.status} | Starting Amount: $${challengeData.startAmount.toLocaleString()}`;
+
+            const portfoliosRef = collection(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios`);
+            challengeDetailUnsubscribe = onSnapshot(portfoliosRef, (snapshot) => {
+                const portfolioData = snapshot.docs.map(doc => doc.data());
+                renderLeaderboard(portfolioData);
+            });
+        }
+
+        function renderLeaderboard(portfolioData) {
+            const ctx = document.getElementById('leaderboard-chart').getContext('2d');
+            
+            const colors = ['#34D399', '#60A5FA', '#FBBF24', '#F87171', '#818CF8', '#A78BFA'];
+            const participantData = portfolioData.map((p, i) => ({
+                label: p.username,
+                data: [p.balance],
+                backgroundColor: colors[i % colors.length]
+            }));
+
+            if (leaderboardChart) {
+                leaderboardChart.destroy();
+            }
+
+            leaderboardChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Current Balance'],
+                    datasets: participantData
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { color: '#D1D5DB' }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Live Leaderboard',
+                            color: '#F9FAFB',
+                            font: { size: 16 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: { color: '#9CA3AF' },
+                            grid: { color: '#4B5563' }
+                        },
+                        x: {
+                            ticks: { color: '#9CA3AF' },
+                            grid: { color: '#4B5563' }
+                        }
+                    }
+                }
+            });
+            renderLeaderboardFilter(portfolioData);
+        }
+
+        function renderLeaderboardFilter(portfolioData) {
+            leaderboardFilter.innerHTML = '';
+            portfolioData.forEach((p, index) => {
+                const isVisible = leaderboardChart.isDatasetVisible(index);
+                const filterEl = document.createElement('div');
+                filterEl.className = 'flex items-center';
+                filterEl.innerHTML = `
+                    <input id="filter-${p.userId}" type="checkbox" ${isVisible ? 'checked' : ''} data-index="${index}" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    <label for="filter-${p.userId}" class="ml-2 block text-sm text-gray-300">${p.username}</label>
+                `;
+                leaderboardFilter.appendChild(filterEl);
+            });
+
+            leaderboardFilter.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    const index = e.target.dataset.index;
+                    leaderboardChart.toggleDataVisibility(index);
+                    leaderboardChart.update();
+                });
+            });
+        }
+
+
+        // --- Trading Logic ---
+        let currentPortfolioUnsubscribe = null;
+        let baseBalance = 0;
+
+        async function selectChallengeToTrade() {
+            const challengeId = tradeChallengeSelect.value;
+            
+            if (currentPortfolioUnsubscribe) currentPortfolioUnsubscribe();
+
+            if (!challengeId || !userId) {
+                tradeEquity.textContent = '$0.00';
+                openPositionsList.innerHTML = '<p class="text-gray-400">Select a challenge to see positions.</p>';
+                return;
+            }
+
+            const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${userId}`);
+            
+            currentPortfolioUnsubscribe = onSnapshot(portfolioRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const portfolioData = docSnap.data();
+                    baseBalance = portfolioData.balance; // Store the base balance
+                    renderOpenPositions(portfolioData.trades || [], challengeId);
+                    updateAllPnl(); 
+                } else {
+                    tradeEquity.textContent = 'N/A';
+                    openPositionsList.innerHTML = '<p class="text-gray-400">Portfolio not found for this challenge.</p>';
+                }
+            });
+        }
+        tradeChallengeSelect.addEventListener('change', selectChallengeToTrade);
+
+        function renderOpenPositions(trades, challengeId) {
+            openPositionsList.innerHTML = '';
+            if (trades.length === 0) {
+                openPositionsList.innerHTML = '<p class="text-gray-400">No open positions for this challenge.</p>';
+                updateAllPnl(); 
+                return;
+            }
+
+            trades.forEach(trade => {
+                const tradeEl = document.createElement('div');
+                tradeEl.className = `p-3 rounded-lg border-l-4`;
+                tradeEl.setAttribute('data-trade-id', trade.id);
+                tradeEl.setAttribute('data-symbol', trade.symbol);
+                tradeEl.setAttribute('data-entry-price', trade.entryPrice);
+                tradeEl.setAttribute('data-lot-size', trade.lotSize);
+                tradeEl.setAttribute('data-trade-type', trade.type);
+
+                tradeEl.innerHTML = `
+                    <div class="grid grid-cols-2 md:grid-cols-7 gap-3 items-center">
+                        <div class="font-bold">${trade.symbol}</div>
+                        <div class="uppercase font-semibold">${trade.type}</div>
+                        <div><span class="text-gray-400">Lots:</span> ${trade.lotSize}</div>
+                        <div><span class="text-gray-400">Entry:</span> ${trade.entryPrice.toFixed(2)}</div>
+                        <div class="pnl font-bold text-lg text-gray-400">$0.00</div>
+                        <div class="flex gap-2">
+                           <input type="number" class="sl-input bg-gray-900 text-sm rounded-md p-1 w-full" value="${trade.stopLoss || ''}" placeholder="SL">
+                           <input type="number" class="tp-input bg-gray-900 text-sm rounded-md p-1 w-full" value="${trade.takeProfit || ''}" placeholder="TP">
+                        </div>
+                        <div class="flex gap-1">
+                           <button class="save-sl-tp-btn bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md">Save</button>
+                           <button class="close-trade-btn bg-gray-600 hover:bg-gray-500 text-white text-xs font-bold py-1 px-2 rounded-md">Close</button>
+                        </div>
+                    </div>
+                `;
+                openPositionsList.appendChild(tradeEl);
+            });
+            
+            document.querySelectorAll('.close-trade-btn, .save-sl-tp-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const tradeRow = e.target.closest('[data-trade-id]');
+                    const tradeId = tradeRow.dataset.tradeId;
+                    if (e.target.classList.contains('close-trade-btn')) {
+                        closeTrade(challengeId, tradeId);
+                    } else {
+                        const sl = tradeRow.querySelector('.sl-input').value;
+                        const tp = tradeRow.querySelector('.tp-input').value;
+                        updateTradeSlTp(challengeId, tradeId, sl, tp);
+                    }
+                });
+            });
+
+            // Subscribe to all unique symbols from open trades
+            const openSymbols = [...new Set(trades.map(t => t.symbol))];
+            openSymbols.forEach(s => livePriceFeed.subscribe(s));
+        }
+        
+        function calculatePnl(trade, currentPrice) {
+            const contractSize = 100000; // Standard lot size for currencies/forex
+            let pnl = 0;
+            if (trade.type === 'buy') {
+                pnl = (currentPrice - trade.entryPrice) * trade.lotSize * contractSize;
+            } else { // sell
+                pnl = (trade.entryPrice - currentPrice) * trade.lotSize * contractSize;
+            }
+            return pnl;
+        }
+
+        async function updateAllPnl() {
+            const tradeElements = Array.from(document.querySelectorAll('[data-trade-id]'));
+            
+            const trades = tradeElements.map(el => ({
+                id: el.dataset.tradeId,
+                symbol: el.dataset.symbol,
+                entryPrice: parseFloat(el.dataset.entryPrice),
+                lotSize: parseFloat(el.dataset.lotSize),
+                type: el.dataset.tradeType
+            }));
+
+            if (trades.length === 0) {
+                tradeEquity.textContent = `$${baseBalance.toFixed(2)}`;
+                return;
+            }
+            
+            let totalUnrealizedPnl = 0;
+            trades.forEach(trade => {
+                const currentPrice = priceCache.get(trade.symbol) || trade.entryPrice;
+                const pnl = calculatePnl(trade, currentPrice);
+                totalUnrealizedPnl += pnl;
+
+                const tradeEl = document.querySelector(`[data-trade-id="${trade.id}"]`);
+                if (tradeEl) {
+                    const pnlEl = tradeEl.querySelector('.pnl');
+                    pnlEl.textContent = `$${pnl.toFixed(2)}`;
+                    pnlEl.classList.toggle('text-green-400', pnl >= 0);
+                    pnlEl.classList.toggle('text-red-400', pnl < 0);
+                    
+                    const borderEl = tradeEl;
+                    borderEl.classList.toggle('border-green-500', pnl >= 0);
+                    borderEl.classList.toggle('border-red-500', pnl < 0);
+                }
+            });
+            
+            const currentEquity = baseBalance + totalUnrealizedPnl;
+            tradeEquity.textContent = `$${currentEquity.toFixed(2)}`;
+            tradeEquity.classList.toggle('text-green-500', currentEquity >= baseBalance);
+            tradeEquity.classList.toggle('text-red-500', currentEquity < baseBalance);
+        }
+
+        async function placeTrade(tradeType) {
+            if (!userId) return showModal('You must be logged in.');
+            
+            const challengeId = tradeChallengeSelect.value;
+            if (!challengeId) return showModal('Please select an active challenge first.');
+
+            const lotSize = parseFloat(lotSizeInput.value);
+            if (isNaN(lotSize) || lotSize <= 0) return showModal('Please enter a valid lot size.');
+
+            const stopLoss = parseFloat(stopLossInput.value) || null;
+            const takeProfit = parseFloat(takeProfitInput.value) || null;
+            
+            const entryPrice = priceCache.get(finnhubSymbol);
+            if (!entryPrice) {
+                 showModal(`Waiting for live price for ${finnhubSymbol}. Please try again in a moment.`);
+                 return;
+            }
+            
+            const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${userId}`);
+
+            try {
+                 const newTrade = {
+                    id: `trade-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    type: tradeType,
+                    symbol: finnhubSymbol,
+                    lotSize: lotSize,
+                    entryPrice: entryPrice,
+                    stopLoss: stopLoss,
+                    takeProfit: takeProfit,
+                    status: 'open',
+                    openedAt: new Date()
+                };
+
+                await updateDoc(portfolioRef, {
+                    trades: arrayUnion(newTrade)
+                });
+
+                showModal(`${tradeType.toUpperCase()} order for ${lotSize} lots on ${finnhubSymbol} placed successfully!`);
+            } catch (error) {
+                console.error("Trade Error: ", error);
+                showModal(`Failed to place trade: ${error}`);
+            }
+        }
+
+        async function updateTradeSlTp(challengeId, tradeId, stopLoss, takeProfit) {
+            const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${userId}`);
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const portfolioDoc = await transaction.get(portfolioRef);
+                    if (!portfolioDoc.exists()) throw "Portfolio not found!";
+
+                    const portfolioData = portfolioDoc.data();
+                    const trades = portfolioData.trades || [];
+                    const tradeIndex = trades.findIndex(t => t.id === tradeId);
+
+                    if (tradeIndex === -1) throw "Trade not found.";
+
+                    trades[tradeIndex].stopLoss = parseFloat(stopLoss) || null;
+                    trades[tradeIndex].takeProfit = parseFloat(takeProfit) || null;
+
+                    transaction.update(portfolioRef, { trades: trades });
+                });
+                showModal('Trade updated successfully!');
+            } catch (error) {
+                console.error("Update SL/TP Error:", error);
+                showModal(`Failed to update trade: ${error}`);
+            }
+        }
+
+        async function closeTrade(challengeId, tradeId) {
+             if (!userId) return showModal('You must be logged in.');
+             const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${userId}`);
+
+             try {
+                let pnl = 0;
+                await runTransaction(db, async (transaction) => {
+                    const portfolioDoc = await transaction.get(portfolioRef);
+                    if (!portfolioDoc.exists()) throw "Portfolio not found!";
+
+                    const portfolioData = portfolioDoc.data();
+                    const trades = portfolioData.trades || [];
+                    const tradeToClose = trades.find(t => t.id === tradeId);
+
+                    if (!tradeToClose) throw "Trade not found to close.";
+                    
+                    const closePrice = priceCache.get(tradeToClose.symbol);
+                    if(!closePrice) throw new Error(`Could not get live closing price for ${tradeToClose.symbol}`);
+                    
+                    pnl = calculatePnl(tradeToClose, closePrice);
+
+                    const newBalance = portfolioData.balance + pnl;
+                    const updatedTrades = trades.filter(t => t.id !== tradeId);
+
+                    transaction.update(portfolioRef, {
+                        balance: newBalance,
+                        trades: updatedTrades
+                    });
+                });
+                showModal(`Trade closed! P/L: $${pnl.toFixed(2)}`);
+             } catch (error) {
+                console.error("Close Trade Error:", error);
+                showModal(`Failed to close trade: ${error}`);
+             }
+        }
+
+        async function closeAllPositions() {
+            const challengeId = tradeChallengeSelect.value;
+            if (!challengeId) return showModal('Please select a challenge first.');
+            if (!userId) return showModal('You must be logged in.');
+
+            const portfolioRef = doc(db, `artifacts/${appId}/public/data/challenges/${challengeId}/portfolios/${userId}`);
+
+            try {
+                let totalPnl = 0;
+                await runTransaction(db, async (transaction) => {
+                    const portfolioDoc = await transaction.get(portfolioRef);
+                    if (!portfolioDoc.exists()) throw "Portfolio not found!";
+                    
+                    const portfolioData = portfolioDoc.data();
+                    const trades = portfolioData.trades || [];
+
+                    if (trades.length === 0) throw "No open positions to close.";
+
+                    for(const trade of trades) {
+                        const closePrice = priceCache.get(trade.symbol) || trade.entryPrice;
+                        totalPnl += calculatePnl(trade, closePrice);
+                    }
+
+                    const newBalance = portfolioData.balance + totalPnl;
+                    
+                    transaction.update(portfolioRef, {
+                        balance: newBalance,
+                        trades: []
+                    });
+                });
+                showModal(`All positions closed! Total P/L: $${totalPnl.toFixed(2)}`);
+            } catch (error) {
+                console.error("Close All Error:", error);
+                showModal(`Failed to close all positions: ${error}`);
+            }
+        }
+
+        buyBtn.addEventListener('click', () => placeTrade('buy'));
+        sellBtn.addEventListener('click', () => placeTrade('sell'));
+        closeAllBtn.addEventListener('click', closeAllPositions);
+        symbolInput.addEventListener('change', (e) => {
+            const newSymbol = e.target.value.trim().toUpperCase();
+            if(newSymbol) {
+                livePriceFeed.unsubscribe(finnhubSymbol);
+                
+                if (newSymbol.length === 6 && !newSymbol.includes(':')) {
+                    finnhubSymbol = `OANDA:${newSymbol.slice(0,3)}_${newSymbol.slice(3)}`;
+                    tradingViewSymbol = `OANDA:${newSymbol.slice(0,3)}${newSymbol.slice(3)}`;
+                } else {
+                    finnhubSymbol = newSymbol;
+                    tradingViewSymbol = newSymbol;
+                }
+                
+                symbolInput.value = tradingViewSymbol;
+                initializeTradingView();
+                livePriceFeed.subscribe(finnhubSymbol);
+                
+                buyBtn.disabled = true;
+                sellBtn.disabled = true;
+                websocketStatus.querySelector('.status-text').textContent = "Waiting for price...";
+            }
+        });
+
+
+        // Initial load
+        showPage('page-dashboard');
+        if (!auth.currentUser) {
+            handleAuthAction();
+        }
+
+    </script>
+</body>
+</html>

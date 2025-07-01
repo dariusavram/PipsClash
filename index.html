@@ -510,29 +510,7 @@
 
             mobileMenu.classList.add('hidden');
         }
-
-        document.querySelector('header').addEventListener('click', (e) => {
-            const navLink = e.target.closest('.nav-link');
-            const loginButton = e.target.closest('#login-btn, #login-btn-mobile');
-
-            if (navLink) {
-                e.preventDefault();
-                const pageId = `page-${navLink.dataset.page}`;
-                if (pageId && document.getElementById(pageId)) {
-                    showPage(pageId);
-                }
-                return;
-            }
-
-            if (loginButton) {
-                handleAuthAction();
-                return;
-            }
-        });
         
-        mobileMenuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
-        backToChallengesBtn.addEventListener('click', () => showPage('page-challenges'));
-
         // --- Authentication ---
         onAuthStateChanged(auth, async (user) => {
             const loginButtons = [loginBtn, loginBtnMobile];
@@ -602,8 +580,6 @@
                 showModal("Could not create profile. Please try again.");
             }
         }
-        usernameSubmitBtn.addEventListener('click', handleUsernameSubmit);
-
 
         // --- User Profile & Friends ---
         async function setupUserProfile(uid) {
@@ -646,7 +622,6 @@
             friendCodeInput.value = '';
             showModal('Friend added successfully!');
         }
-        addFriendBtn.addEventListener('click', addFriend);
 
         function listenForFriends() {
             if (!userId) return;
@@ -698,7 +673,6 @@
                 showModal('Failed to create challenge.');
             }
         }
-        createChallengeBtn.addEventListener('click', createChallenge);
 
         function listenForChallenges() {
             if(!userId) return;
@@ -850,7 +824,6 @@
             await joinChallenge(challengeDoc.id);
             challengeCodeInput.value = '';
         }
-        joinByCodeBtn.addEventListener('click', joinChallengeByCode);
 
         async function startChallenge(challengeId, participants, startAmount) {
             if (!userId) return showModal('You must be logged in.');
@@ -1282,10 +1255,12 @@
 
 
         // Initial load
-        showPage('page-dashboard');
-        if (!auth.currentUser) {
-            handleAuthAction();
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+             showPage('page-dashboard');
+            if (!auth.currentUser) {
+                handleAuthAction();
+            }
+        });
 
     </script>
 </body>

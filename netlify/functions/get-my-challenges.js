@@ -1,9 +1,8 @@
 // In your project, save this file as:
-// netlify/
-//   functions/
-//     get-challenges.js
+// netlify/functions/get-my-challenges.js
 
 const { Pool } = require('pg');
+const jwt = require('jsonwebtoken');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -12,17 +11,23 @@ const pool = new Pool({
   }
 });
 
+const JWT_SECRET = process.env.JWT_SECRET || 'your-default-super-secret-key-for-local-testing';
+
 exports.handler = async (event, context) => {
-    // This endpoint is public, so it only accepts GET requests and requires no authentication.
     if (event.httpMethod !== 'GET') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
     const client = await pool.connect();
     try {
-        // This query fetches all challenges marked as public.
-        // It joins with the users table to get the creator's username.
-        // It also uses a subquery to aggregate all participant usernames for each challenge.
+        const token = event.headers.authorization.split(' ')[1];
+        if (!token) {
+            return { statusCode: 401, body: JSON.stringify({ message: 'No token provided.' }) };
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const { userId } = decoded;
+
         const query = `
             SELECT 
                 c.id, 
@@ -40,17 +45,21 @@ exports.handler = async (event, context) => {
                  WHERE p_inner.challenge_id = c.id) as participants
             FROM challenges c
             JOIN users u ON c.creator_id = u.id
-            WHERE c.is_public = TRUE
+            JOIN participants p ON c.id = p.challenge_id
+            WHERE p.user_id = $1
             ORDER BY c.created_at DESC;
         `;
-        const result = await client.query(query);
+        const result = await client.query(query, [userId]);
         
         return {
             statusCode: 200,
             body: JSON.stringify(result.rows),
         };
     } catch (error) {
-        console.error('Get Public Challenges Error:', error);
+        console.error('Get My Challenges Error:', error);
+        if (error.name === 'JsonWebTokenError') {
+             return { statusCode: 401, body: JSON.stringify({ message: 'Invalid token.' }) };
+        }
         return { statusCode: 500, body: JSON.stringify({ message: 'An internal server error occurred.' }) };
     } finally {
         client.release();

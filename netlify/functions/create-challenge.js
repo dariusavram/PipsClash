@@ -26,7 +26,7 @@ exports.handler = async (event, context) => {
 
     const client = await pool.connect();
     try {
-        const { startAmount, timeLimit, maxLossPercent } = JSON.parse(event.body);
+        const { startAmount, timeLimit, maxLossPercent, isPublic } = JSON.parse(event.body);
         const token = event.headers.authorization.split(' ')[1];
         
         if (!token) {
@@ -41,11 +41,11 @@ exports.handler = async (event, context) => {
         await client.query('BEGIN');
 
         const challengeQuery = `
-            INSERT INTO challenges (creator_id, challenge_code, start_amount, time_limit_days, max_loss_percent, status)
-            VALUES ($1, $2, $3, $4, $5, 'pending')
-            RETURNING id, creator_id, challenge_code, start_amount, status;
+            INSERT INTO challenges (creator_id, challenge_code, start_amount, time_limit_days, max_loss_percent, status, is_public)
+            VALUES ($1, $2, $3, $4, $5, 'pending', $6)
+            RETURNING id, creator_id, challenge_code, start_amount, status, is_public;
         `;
-        const challengeResult = await client.query(challengeQuery, [userId, challengeCode, startAmount, timeLimit, maxLossPercent]);
+        const challengeResult = await client.query(challengeQuery, [userId, challengeCode, startAmount, timeLimit, maxLossPercent, isPublic]);
         const newChallenge = challengeResult.rows[0];
 
         const participantQuery = `

@@ -562,6 +562,7 @@
             loginBtn.textContent = 'Logout';
             loginBtnMobile.textContent = 'Logout';
             fetchAndRenderChallenges();
+            fetchAndRenderMyChallenges();
             listenForFriends();
             showPage('page-dashboard');
         }
@@ -768,6 +769,7 @@
 
                 showModal(data.message);
                 fetchAndRenderChallenges();
+                fetchAndRenderMyChallenges();
                 showPage('page-dashboard');
 
             } catch (error) {
@@ -786,31 +788,42 @@
                 const challenges = await response.json();
 
                 challengesList.innerHTML = '';
-                dashboardChallengesList.innerHTML = '';
-                let userChallenges = [];
-                let activeTradeableChallenges = [];
-
                 if(challenges.length === 0){
                     challengesList.innerHTML = '<p class="text-gray-400">No public challenges. Create one!</p>';
                 } else {
                     challenges.forEach(challenge => {
                         const challengeEl = renderChallenge(challenge, challenge.id);
                         challengesList.appendChild(challengeEl);
-                        
-                        if (challenge.participants.some(p => p.uid === currentUser.id)) {
-                            userChallenges.push(challenge);
-                            if (challenge.status === 'active') {
-                                activeTradeableChallenges.push(challenge);
-                            }
-                        }
                     });
                 }
-                
-                dashboardJoinedCount.textContent = userChallenges.length;
-                if (userChallenges.length > 0) {
-                     userChallenges.forEach(c => {
+
+            } catch(error) {
+                console.error("Fetch Challenges Error:", error);
+                showModal(error.message);
+            }
+        }
+        
+        async function fetchAndRenderMyChallenges() {
+             if(!currentUser) return;
+            
+            try {
+                const response = await fetch('/.netlify/functions/get-my-challenges', {
+                     headers: { 'Authorization': `Bearer ${currentUser.token}` }
+                });
+                if (!response.ok) throw new Error('Could not fetch your challenges.');
+                const myChallenges = await response.json();
+
+                dashboardChallengesList.innerHTML = '';
+                let activeTradeableChallenges = [];
+
+                dashboardJoinedCount.textContent = myChallenges.length;
+                if (myChallenges.length > 0) {
+                     myChallenges.forEach(c => {
                         const el = renderChallenge(c, c.id);
                         dashboardChallengesList.appendChild(el);
+                        if(c.status === 'active') {
+                            activeTradeableChallenges.push(c);
+                        }
                      });
                 } else {
                     dashboardChallengesList.innerHTML = '<p class="text-gray-400">You have not joined any challenges yet.</p>';
@@ -825,10 +838,12 @@
                         tradeChallengeSelect.appendChild(option);
                     });
                     tradeChallengeSelect.dispatchEvent(new Event('change'));
+                } else {
+                     tradeChallengeSelect.innerHTML = '<option value="">-- No Active Challenges --</option>';
                 }
 
             } catch(error) {
-                console.error("Fetch Challenges Error:", error);
+                console.error("Fetch My Challenges Error:", error);
                 showModal(error.message);
             }
         }
@@ -918,6 +933,7 @@
                 
                 showModal(data.message);
                 fetchAndRenderChallenges(); // Re-fetch to update UI
+                fetchAndRenderMyChallenges();
             } catch (error) {
                 console.error("Join Challenge Error:", error);
                 showModal(`Error: ${error.message}`);
@@ -951,6 +967,7 @@
 
                 showModal(data.message);
                 fetchAndRenderChallenges(); // Re-fetch to update UI
+                fetchAndRenderMyChallenges();
             } catch (error) {
                 console.error("Start Challenge Error:", error);
                 showModal(`Error: ${error.message}`);
@@ -975,6 +992,7 @@
 
                 showModal(data.message);
                 fetchAndRenderChallenges(); // Re-fetch to update UI
+                fetchAndRenderMyChallenges();
             } catch (error) {
                 console.error("Cancel Challenge Error:", error);
                 showModal(`Error: ${error.message}`);

@@ -43,7 +43,7 @@ exports.handler = async (event, context) => {
         const balance = balanceResult.rows[0].balance;
 
         // Get all open trades for the participant in this challenge
-        const tradesQuery = "SELECT * FROM trades WHERE participant_user_id = $1 AND participant_challenge_id = $2 AND status = 'open'";
+        const tradesQuery = "SELECT * FROM trades WHERE participant_user_id = $1 AND participant_challenge_id = $2 AND status = 'open' ORDER BY opened_at DESC";
         const tradesResult = await client.query(tradesQuery, [userId, challengeId]);
 
         return {

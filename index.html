@@ -133,6 +133,14 @@
                                 <label for="max-loss" class="block text-sm font-medium text-gray-300">Max Loss (%)</label>
                                 <input type="number" id="max-loss" value="10" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 mt-1 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-300">Private Challenge</span>
+                                <label for="is-public-toggle" class="inline-flex relative items-center cursor-pointer">
+                                  <input type="checkbox" value="" id="is-public-toggle" class="sr-only peer" checked>
+                                  <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                  <span class="ml-3 text-sm font-medium text-gray-300">Public</span>
+                                </label>
+                              </div>
                             <button id="create-challenge-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Create Challenge</button>
                         </div>
                     </div>
@@ -335,6 +343,7 @@
         const mobileMenu = document.getElementById('mobile-menu');
         const joinByCodeBtn = document.getElementById('join-by-code-btn');
         const challengeCodeInput = document.getElementById('challenge-code-input');
+        const isPublicToggle = document.getElementById('is-public-toggle');
         
         // Trade Page Elements
         const tradeChallengeSelect = document.getElementById('trade-challenge-select');
@@ -741,6 +750,7 @@
                 startAmount: parseInt(document.getElementById('challenge-sum').value),
                 timeLimit: parseInt(document.getElementById('time-limit').value),
                 maxLossPercent: parseInt(document.getElementById('max-loss').value),
+                isPublic: isPublicToggle.checked
             };
 
             try {
